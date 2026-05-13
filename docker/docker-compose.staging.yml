@@ -1,20 +1,10 @@
 services:
   auth-api:
-    image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG:-staging}
+    ports:
+      - "127.0.0.1:8081:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__Default: "Server=mysql.gdac.com.br;Port=3306;Database=gdac_auth_stg;Uid=gdac01;Pwd=${DB_STG_PASSWORD};CharSet=utf8mb4;SslMode=Preferred;"
       Jwt__Issuer: https://auth-stg.gdac.com.br
       Email__BaseUrl: https://auth-stg.gdac.com.br
-
-  auth-nginx:
-    image: nginx:1.27-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/conf.d/staging.conf:/etc/nginx/conf.d/default.conf:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-    depends_on:
-      - auth-api
