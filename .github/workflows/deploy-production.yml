@@ -48,7 +48,7 @@ jobs:
 
             echo "Backup do banco antes do deploy..."
             docker run --rm mariadb:11.4 \
-              mysqldump -h mysql.gdac.com.br -u gdac02 -p"${DB_PROD_PASSWORD}" gdac_auth \
+              mariadb-dump -h mysql.gdac.com.br -u gdac02 -p"${DB_PROD_PASSWORD}" gdac_auth \
               > backups/pre-deploy-$(date +%Y%m%d-%H%M%S).sql
 
             echo "Atualizando imagem..."
