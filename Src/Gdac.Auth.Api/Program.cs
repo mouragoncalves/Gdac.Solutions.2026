@@ -22,16 +22,19 @@ try
         var emailCfg = ctx.Configuration.GetSection("Email");
         var host     = emailCfg["Host"];
         var alertTo  = emailCfg["AlertTo"];
-        var from     = emailCfg["From"];
+        var from     = emailCfg["From"] ?? emailCfg["Username"];
         var password = emailCfg["Password"];
-        var useSsl   = bool.Parse(emailCfg["UseSsl"] ?? "true");
-        var port     = int.Parse(emailCfg["Port"] ?? "587");
+        var port     = int.Parse(emailCfg["Port"] ?? "465");
 
         if (!string.IsNullOrEmpty(host) && !string.IsNullOrEmpty(alertTo))
         {
-            var socketOptions = useSsl
-                ? MailKit.Security.SecureSocketOptions.StartTls
-                : MailKit.Security.SecureSocketOptions.None;
+            var socketOptions = emailCfg["SslMode"] switch
+            {
+                "SslOnConnect" => MailKit.Security.SecureSocketOptions.SslOnConnect,
+                "StartTls"     => MailKit.Security.SecureSocketOptions.StartTls,
+                "None"         => MailKit.Security.SecureSocketOptions.None,
+                _              => MailKit.Security.SecureSocketOptions.Auto
+            };
 
             var env = ctx.HostingEnvironment.EnvironmentName;
             var subject = ctx.HostingEnvironment.IsProduction()
@@ -39,7 +42,7 @@ try
                 : $"[{env}] [GDAC Auth] Erro crítico";
 
             cfg.WriteTo.Email(
-                from:                     from ?? "noreply@gdac.com.br",
+                from:                     from!,
                 to:                       alertTo,
                 host:                     host,
                 port:                     port,
