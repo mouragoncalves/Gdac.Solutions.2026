@@ -8,7 +8,7 @@ services:
         max_attempts: 3
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__Default: "Server=mysql.gdac.com.br;Port=3306;Database=gdac_auth;Uid=gdac;Pwd=${DB_PROD_PASSWORD};CharSet=utf8mb4;SslMode=Preferred;"
+      ConnectionStrings__Default: "Server=mysql.gdac.com.br;Port=3306;Database=gdac_auth;Uid=gdac02;Pwd=${DB_PROD_PASSWORD};CharSet=utf8mb4;SslMode=Preferred;"
 
   auth-nginx:
     image: nginx:1.27-alpine
