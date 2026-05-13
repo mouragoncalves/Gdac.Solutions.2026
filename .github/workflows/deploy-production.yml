@@ -60,7 +60,7 @@ jobs:
               --env-file .env \
               -f docker/docker-compose.yml \
               -f docker/docker-compose.prod.yml \
-              up -d --no-build
+              up -d --no-build --remove-orphans
 
             echo "Aguardando health check..."
             timeout 90 bash -c 'until curl -sf http://localhost:8080/health/ready; do sleep 5; done'

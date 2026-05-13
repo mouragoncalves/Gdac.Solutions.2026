@@ -36,7 +36,7 @@ jobs:
               --env-file .env \
               -f docker/docker-compose.yml \
               -f docker/docker-compose.staging.yml \
-              up -d --no-build
+              up -d --no-build --remove-orphans
 
             echo "Aguardando health check..."
             timeout 60 bash -c 'until curl -sf http://localhost:8081/health/ready; do sleep 3; done'
