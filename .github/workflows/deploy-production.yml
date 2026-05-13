@@ -43,6 +43,7 @@ jobs:
           script: |
             set -e
             cd /opt/gdac/auth
+            git pull origin main
             mkdir -p backups
 
             echo "Backup do banco antes do deploy..."
