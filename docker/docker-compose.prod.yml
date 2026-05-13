@@ -1,13 +1,9 @@
 services:
   auth-api:
     image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+    restart: on-failure:3
     ports:
       - "127.0.0.1:8080:8080"
-    deploy:
-      replicas: 2
-      restart_policy:
-        condition: on-failure
-        max_attempts: 3
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Default: "Server=mysql.gdac.com.br;Port=3306;Database=gdac02;Uid=gdac02;Pwd=${DB_PROD_PASSWORD};CharSet=utf8mb4;SslMode=Preferred;"
