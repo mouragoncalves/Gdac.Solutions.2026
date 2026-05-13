@@ -49,9 +49,15 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
         message.Subject = subject;
         message.Body = new TextPart("html") { Text = htmlBody };
 
+        var useSsl = bool.Parse(configuration["Email:UseSsl"] ?? "true");
+        var socketOptions = useSsl
+            ? MailKit.Security.SecureSocketOptions.StartTls
+            : MailKit.Security.SecureSocketOptions.None;
+
         using var client = new SmtpClient();
-        await client.ConnectAsync(host, port, MailKit.Security.SecureSocketOptions.StartTls, ct);
-        await client.AuthenticateAsync(username, password, ct);
+        await client.ConnectAsync(host, port, socketOptions, ct);
+        if (useSsl)
+            await client.AuthenticateAsync(username, password, ct);
         await client.SendAsync(message, ct);
         await client.DisconnectAsync(true, ct);
 
