@@ -5,6 +5,6 @@ services:
       - "127.0.0.1:8081:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
-      ConnectionStrings__Default: "Server=mysql.gdac.com.br;Port=3306;Database=gdac_auth_stg;Uid=gdac01;Pwd=${DB_STG_PASSWORD};CharSet=utf8mb4;SslMode=Preferred;"
+      ConnectionStrings__Default: "Server=mysql.gdac.com.br;Port=3306;Database=gdac01;Uid=gdac01;Pwd=${DB_STG_PASSWORD};CharSet=utf8mb4;SslMode=Preferred;"
       Jwt__Issuer: https://auth-stg.gdac.com.br
       Email__BaseUrl: https://auth-stg.gdac.com.br
