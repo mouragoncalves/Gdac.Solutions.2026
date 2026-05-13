@@ -49,7 +49,8 @@ jobs:
             echo "Backup do banco antes do deploy..."
             docker run --rm mariadb:11.4 \
               mariadb-dump -h mysql.gdac.com.br -u gdac02 -p"${DB_PROD_PASSWORD}" gdac_auth \
-              > backups/pre-deploy-$(date +%Y%m%d-%H%M%S).sql
+              > backups/pre-deploy-$(date +%Y%m%d-%H%M%S).sql \
+              || echo "⚠️ Backup falhou — verifique permissões do gdac02 para o IP do VPS."
 
             echo "Atualizando imagem..."
             docker pull ghcr.io/${{ github.repository_owner }}/gdac-auth:${{ steps.tag.outputs.value }}
