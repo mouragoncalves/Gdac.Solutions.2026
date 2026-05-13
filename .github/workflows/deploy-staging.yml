@@ -33,6 +33,7 @@ jobs:
 
             echo "Subindo serviços..."
             IMAGE_TAG=${{ github.event.workflow_run.head_sha }} docker compose \
+              --env-file .env \
               -f docker/docker-compose.yml \
               -f docker/docker-compose.staging.yml \
               up -d --no-build
