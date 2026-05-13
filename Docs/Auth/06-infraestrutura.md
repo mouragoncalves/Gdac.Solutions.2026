@@ -6,12 +6,30 @@
 
 | Característica | Valor |
 |----------------|-------|
-| Swagger | Habilitado e público |
+| Swagger | Habilitado (CSP relaxada para `/swagger/*`) |
 | Logs | Nível Debug, console colorido |
-| Migrations | Automáticas ao iniciar |
+| Migrations | Manuais via `dotnet ef database update` |
 | HTTPS | Certificado de desenvolvimento .NET |
-| Redis | Container local |
-| MariaDB | Container local |
+| Redis | Container Docker (`auth-redis-dev` na porta 6379) |
+| MariaDB | XAMPP local via socket Unix (`/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock`) |
+| E-mail | Mailpit container Docker (porta 1025 SMTP / 8025 UI) |
+
+**Pré-requisitos para rodar localmente:**
+```bash
+# 1. Iniciar XAMPP (MariaDB 10.4+)
+# 2. Redis
+docker run -d --name auth-redis-dev -p 6379:6379 redis:7.4-alpine redis-server --save ""
+# 3. Mailpit
+docker run -d --name mailpit-dev -p 8025:8025 -p 1025:1025 axllent/mailpit:latest
+# 4. Criar banco
+/Applications/XAMPP/xamppfiles/bin/mysql --socket=... -u root -e "CREATE DATABASE gdac_auth_dev ..."
+# 5. Aplicar migrations
+dotnet ef database update --project Src/Gdac.Auth.Infrastructure --startup-project Src/Gdac.Auth.Api
+# 6. Configurar user-secrets (chaves JWT)
+cd Src/Gdac.Auth.Api && dotnet user-secrets set "Jwt:PrivateKey" "$(cat ../../secrets/jwt_private.pem)"
+# 7. Rodar a API
+dotnet run --project Src/Gdac.Auth.Api
+```
 
 Arquivo: `appsettings.Development.json`
 
@@ -21,12 +39,12 @@ Arquivo: `appsettings.Development.json`
 
 | Característica | Valor |
 |----------------|-------|
-| Swagger | Habilitado, protegido por Basic Auth |
+| Swagger | Habilitado (CSP relaxada para `/swagger/*`) |
 | Logs | Nível Information, JSON estruturado |
-| Migrations | Manuais (via CLI antes do deploy) |
+| Migrations | Executadas no deploy via `docker run` antes do `compose up` |
 | HTTPS | Certificado real (Let's Encrypt via Nginx) |
-| Redis | Instância dedicada |
-| MariaDB | Banco separado do produção |
+| Redis | Container dedicado |
+| MariaDB | `mysql.gdac.com.br` — database `gdac_auth_stg`, usuário `gdac01` |
 
 Arquivo: `appsettings.Staging.json`
 
@@ -38,10 +56,11 @@ Arquivo: `appsettings.Staging.json`
 |----------------|-------|
 | Swagger | Desabilitado |
 | Logs | Nível Warning + eventos de segurança |
-| Migrations | Manuais, com backup obrigatório antes |
+| Migrations | Executadas no deploy — backup automático antes via `mysqldump` |
 | HTTPS | Obrigatório, HSTS ativo |
 | Rate Limit | Totalmente ativo |
 | Debug | Desabilitado |
+| MariaDB | `mysql.gdac.com.br` — database `gdac_auth`, usuário `gdac02` |
 
 Arquivo: `appsettings.Production.json`
 
@@ -83,10 +102,11 @@ ENTRYPOINT ["dotnet", "Gdac.Auth.Api.dll"]
 ### docker-compose.yml (base)
 
 Serviços:
-- `gdac-auth-api` — a aplicação
-- `gdac-auth-db` — MariaDB
-- `gdac-auth-redis` — Redis
-- `gdac-auth-nginx` — Nginx reverse proxy
+- `auth-api` — a aplicação
+- `auth-redis` — Redis
+- `auth-nginx` — Nginx reverse proxy (staging/prod)
+
+> O banco de dados **não é gerenciado via container** — dev usa XAMPP local, staging e prod usam `mysql.gdac.com.br`.
 
 ---
 
@@ -229,12 +249,29 @@ Etapas:
 
 ### Secrets necessários no GitHub
 
+**Repositório** (Settings → Secrets → Actions):
+
 ```
-REGISTRY_TOKEN          ← token GHCR
-STAGING_SSH_KEY         ← chave SSH staging
-STAGING_HOST            ← IP/hostname staging
-PRODUCTION_SSH_KEY      ← chave SSH produção
-PRODUCTION_HOST         ← IP/hostname produção
+CI_JWT_PRIVATE_KEY      ← chave RSA privada (gerada por scripts/generate-keys.sh)
+CI_JWT_PUBLIC_KEY       ← chave RSA pública correspondente
+```
+
+**Ambiente `production`** (Settings → Environments → production):
+
+```
+DB_PROD_PASSWORD        ← senha do usuário gdac02 em mysql.gdac.com.br
+PRODUCTION_HOST         ← mysql.gdac.com.br
+PRODUCTION_USER         ← usuário SSH do servidor
+PRODUCTION_SSH_KEY      ← chave privada SSH
+```
+
+**Ambiente `staging`** (Settings → Environments → staging):
+
+```
+DB_STG_PASSWORD         ← senha do usuário gdac01 em mysql.gdac.com.br
+STAGING_HOST            ← mysql.gdac.com.br
+STAGING_USER            ← usuário SSH do servidor
+STAGING_SSH_KEY         ← chave privada SSH
 ```
 
 ---
@@ -251,7 +288,9 @@ openssl genrsa -out private.pem 4096
 openssl rsa -in private.pem -pubout -out public.pem
 ```
 
-- Em development: configurar via `dotnet user-secrets`
-- Em staging/production: variáveis de ambiente no servidor (nunca em arquivo commitado)
+- Em development: configurar via `dotnet user-secrets` (ver pré-requisitos acima)
+- Em staging/production: variáveis de ambiente injetadas pelo docker compose via `.env` no servidor (nunca em arquivo commitado)
+
+O script de geração de chaves está em `scripts/generate-keys.sh` e salva os arquivos em `secrets/` (pasta no `.gitignore`).
 
 Rotação de chaves: anualmente ou imediatamente em caso de comprometimento. Ao rotacionar, manter a chave antiga no JWKS até todos os tokens com ela expirarem (máximo 15 minutos + margem).

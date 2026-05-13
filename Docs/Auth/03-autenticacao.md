@@ -44,9 +44,11 @@ As chaves são carregadas de variáveis de ambiente (`JWT_PRIVATE_KEY`, `JWT_PUB
 | Idle timeout | 1 hora |
 | Expiração absoluta | 8 horas |
 | Rotação | Obrigatória a cada uso |
-| Armazenamento | Apenas hash (Argon2id) |
+| Armazenamento | Apenas hash SHA-256 |
 
 A cada chamada ao `/auth/refresh`, o refresh token atual é invalidado e um novo par (access + refresh) é emitido.
+
+> **Nota de implementação:** o hash do refresh token usa SHA-256 (não Argon2id), pois tokens são longos e aleatórios — a resistência a brute-force é garantida pela entropia do token em si, não pelo custo do hash.
 
 ---
 
@@ -195,18 +197,21 @@ Resposta: 204 No Content
 
 ```
 Cliente → POST /api/v1/demo/register
-  Body: { name, email, ... }
+  Body: { name, email, clientId, clientSecret }
 
-1. Valida dados do formulário
-2. Verifica se e-mail já existe
-3. Cria usuário com senha temporária aleatória (12+ caracteres)
-4. Define MustChangePassword = true
-5. Associa usuário às aplicações demo liberadas
-6. Envia e-mail com senha temporária
-7. Retorna confirmação (sem expor a senha)
+1. Valida clientId + clientSecret (Application ativa)
+2. Valida dados do formulário
+3. Verifica se e-mail já existe
+4. Cria usuário com senha temporária aleatória (16 caracteres)
+5. Define MustChangePassword = true
+6. Vincula o usuário à Application informada (UserApplication)
+7. Envia e-mail com senha temporária
+8. Retorna confirmação (sem expor a senha)
 
 Resposta: { "message": "Conta criada. Verifique seu e-mail para acessar." }
 ```
+
+> As credenciais da aplicação (`clientId`/`clientSecret`) são obrigatórias para determinar a qual aplicação o usuário demo pertence. Sem esse vínculo o login seria impossível.
 
 ---
 

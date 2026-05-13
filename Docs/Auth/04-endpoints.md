@@ -247,13 +247,15 @@ Retorna as empresas associadas ao usuário.
 
 ### POST /demo/register
 
-Cria uma conta demo com senha temporária.
+Cria uma conta demo com senha temporária e vincula o usuário à aplicação informada.
 
 **Request:**
 ```json
 {
   "name": "João Silva",
-  "email": "joao@empresa.com"
+  "email": "joao@empresa.com",
+  "clientId": "app-erp-gdac",
+  "clientSecret": "secret-aqui"
 }
 ```
 
@@ -268,6 +270,7 @@ Cria uma conta demo com senha temporária.
 | Status | Mensagem |
 |--------|----------|
 | 400 | `"E-mail já cadastrado."` |
+| 401 | `"Aplicação inválida."` |
 | 429 | `"Limite de registros atingido. Tente novamente mais tarde."` |
 
 ---
