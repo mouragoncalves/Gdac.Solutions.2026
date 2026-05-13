@@ -31,12 +31,6 @@ jobs:
             echo "Atualizando imagem..."
             docker pull ghcr.io/${{ github.repository_owner }}/gdac-auth:${{ github.event.workflow_run.head_sha }}
 
-            echo "Aplicando migrations..."
-            docker run --rm \
-              -e "ConnectionStrings__Default=Server=mysql.gdac.com.br;Port=3306;Database=gdac01;Uid=gdac01;Pwd=${DB_STG_PASSWORD};CharSet=utf8mb4;SslMode=Preferred;" \
-              ghcr.io/${{ github.repository_owner }}/gdac-auth:${{ github.event.workflow_run.head_sha }} \
-              dotnet ef database update --no-build
-
             echo "Subindo serviços..."
             IMAGE_TAG=${{ github.event.workflow_run.head_sha }} docker compose \
               -f docker/docker-compose.yml \

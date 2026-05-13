@@ -1,6 +1,7 @@
 using Gdac.Auth.Api.Extensions;
 using Gdac.Auth.Api.Middleware;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System.Text.Json;
 
@@ -72,6 +73,12 @@ try
     });
 
     var app = builder.Build();
+
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<Gdac.Auth.Infrastructure.Persistence.AppDbContext>();
+        db.Database.Migrate();
+    }
 
     app.UseMiddleware<CorrelationIdMiddleware>();
     app.UseMiddleware<ExceptionHandlingMiddleware>();
