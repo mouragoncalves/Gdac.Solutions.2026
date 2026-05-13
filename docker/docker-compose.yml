@@ -26,11 +26,7 @@ services:
       Jwt__PublicKey: ${JWT_PUBLIC_KEY}
       Jwt__Issuer: ${JWT_ISSUER}
       Jwt__Audience: ${JWT_AUDIENCE:-gdac-apps}
-      Email__Host: ${EMAIL_HOST}
-      Email__Port: ${EMAIL_PORT:-587}
-      Email__Username: ${EMAIL_USERNAME}
       Email__Password: ${EMAIL_PASSWORD}
-      Email__From: ${EMAIL_FROM}
       Email__BaseUrl: ${APP_BASE_URL}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]

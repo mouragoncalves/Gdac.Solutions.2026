@@ -13,10 +13,38 @@ try
     var builder = WebApplication.CreateBuilder(args);
 
     builder.Host.UseSerilog((ctx, services, cfg) =>
+    {
         cfg.ReadFrom.Configuration(ctx.Configuration)
            .ReadFrom.Services(services)
            .Enrich.FromLogContext()
-           .Enrich.WithProperty("Application", "Gdac.Auth"));
+           .Enrich.WithProperty("Application", "Gdac.Auth");
+
+        var emailCfg = ctx.Configuration.GetSection("Email");
+        var host     = emailCfg["Host"];
+        var alertTo  = emailCfg["AlertTo"];
+        var from     = emailCfg["From"];
+        var password = emailCfg["Password"];
+        var useSsl   = bool.Parse(emailCfg["UseSsl"] ?? "true");
+        var port     = int.Parse(emailCfg["Port"] ?? "587");
+
+        if (!string.IsNullOrEmpty(host) && !string.IsNullOrEmpty(alertTo))
+        {
+            var socketOptions = useSsl
+                ? MailKit.Security.SecureSocketOptions.StartTls
+                : MailKit.Security.SecureSocketOptions.None;
+
+            cfg.WriteTo.Email(
+                from:                     from ?? "noreply@gdac.com.br",
+                to:                       alertTo,
+                host:                     host,
+                port:                     port,
+                connectionSecurity:       socketOptions,
+                credentials:              new System.Net.NetworkCredential(emailCfg["Username"], password),
+                subject:                  "[GDAC Auth] Erro crítico",
+                restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Error
+            );
+        }
+    });
 
     builder.Services.AddControllers();
     builder.Services.AddApplication();
