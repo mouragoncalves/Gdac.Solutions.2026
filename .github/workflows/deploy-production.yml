@@ -58,7 +58,6 @@ jobs:
             echo "Aplicando migrations..."
             docker run --rm \
               -e "ConnectionStrings__Default=Server=mysql.gdac.com.br;Port=3306;Database=gdac02;Uid=gdac02;Pwd=${DB_PROD_PASSWORD};CharSet=utf8mb4;SslMode=Preferred;" \
-              --env-file .env \
               ghcr.io/${{ github.repository_owner }}/gdac-auth:${{ steps.tag.outputs.value }} \
               dotnet ef database update --no-build
 

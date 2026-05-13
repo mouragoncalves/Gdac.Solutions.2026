@@ -17,9 +17,9 @@ public class RsaKeyProvider
             ?? throw new InvalidOperationException("JWT__PublicKey não configurada.");
 
         PrivateKey = RSA.Create();
-        PrivateKey.ImportFromPem(privateKeyPem);
+        PrivateKey.ImportFromPem(privateKeyPem.Replace("\\n", "\n"));
 
         PublicKey = RSA.Create();
-        PublicKey.ImportFromPem(publicKeyPem);
+        PublicKey.ImportFromPem(publicKeyPem.Replace("\\n", "\n"));
     }
 }
