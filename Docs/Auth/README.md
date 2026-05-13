@@ -14,6 +14,7 @@ API central de autenticação enterprise para todas as aplicações GDAC.
 | 4 | [Endpoints](./04-endpoints.md) | Referência completa da API |
 | 5 | [Segurança](./05-seguranca.md) | Senhas, rate limit, headers, CORS, brute force |
 | 6 | [Infraestrutura](./06-infraestrutura.md) | Docker, ambientes, CI/CD, observabilidade |
+| 7 | [Swagger](./07-swagger.md) | Como testar a API localmente via Swagger |
 
 ---
 
