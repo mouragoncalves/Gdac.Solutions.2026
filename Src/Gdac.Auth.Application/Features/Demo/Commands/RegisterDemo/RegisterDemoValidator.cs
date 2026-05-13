@@ -13,5 +13,11 @@ public class RegisterDemoValidator : AbstractValidator<RegisterDemoCommand>
         RuleFor(x => x.Email)
             .NotEmpty().WithMessage("O e-mail é obrigatório.")
             .EmailAddress().WithMessage("Formato de e-mail inválido.");
+
+        RuleFor(x => x.ClientId)
+            .NotEmpty().WithMessage("O clientId é obrigatório.");
+
+        RuleFor(x => x.ClientSecret)
+            .NotEmpty().WithMessage("O clientSecret é obrigatório.");
     }
 }

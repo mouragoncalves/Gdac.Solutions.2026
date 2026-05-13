@@ -11,9 +11,9 @@ public class DemoController(IMediator mediator) : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDemoRequest request, CancellationToken ct)
     {
-        var result = await mediator.Send(new RegisterDemoCommand(request.Name, request.Email), ct);
+        var result = await mediator.Send(new RegisterDemoCommand(request.Name, request.Email, request.ClientId, request.ClientSecret), ct);
         return Ok(result);
     }
 }
 
-public record RegisterDemoRequest(string Name, string Email);
+public record RegisterDemoRequest(string Name, string Email, string ClientId, string ClientSecret);
