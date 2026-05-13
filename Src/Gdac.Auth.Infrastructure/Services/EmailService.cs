@@ -54,7 +54,16 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
             ? MailKit.Security.SecureSocketOptions.StartTls
             : MailKit.Security.SecureSocketOptions.None;
 
+        // Hospedagem compartilhada (uni5) usa cert emitido para *.uni5.net, não para smtp.gdac.com.br.
+        // Aceitamos apenas erros de nome; certs inválidos ou revogados ainda são rejeitados.
+        var allowNameMismatch = bool.Parse(configuration["Email:AllowCertNameMismatch"] ?? "false");
+
         using var client = new SmtpClient();
+        if (allowNameMismatch)
+            client.ServerCertificateValidationCallback = (_, _, _, errors) =>
+                errors == System.Net.Security.SslPolicyErrors.None ||
+                errors == System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch;
+
         await client.ConnectAsync(host, port, socketOptions, ct);
         if (useSsl)
             await client.AuthenticateAsync(username, password, ct);
