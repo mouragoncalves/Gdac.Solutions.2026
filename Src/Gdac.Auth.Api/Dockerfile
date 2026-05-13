@@ -16,8 +16,8 @@ RUN dotnet publish "Src/Gdac.Auth.Api/Gdac.Auth.Api.csproj" \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-RUN addgroup --system --gid 1001 gdac && \
-    adduser --system --uid 1001 --ingroup gdac gdac
+RUN groupadd --system --gid 1001 gdac && \
+    useradd --system --uid 1001 --gid gdac --no-create-home gdac
 
 COPY --from=build /app/publish .
 RUN chown -R gdac:gdac /app
