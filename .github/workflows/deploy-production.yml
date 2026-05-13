@@ -1,0 +1,50 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Tag da imagem para deploy (SHA do commit)'
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/gdac/auth
+
+            echo "Backup do banco antes do deploy..."
+            docker exec auth-db mysqldump \
+              -u root -p"${DB_ROOT_PASSWORD}" gdac_auth \
+              > backups/pre-deploy-$(date +%Y%m%d-%H%M%S).sql
+
+            echo "Atualizando imagem..."
+            docker pull ghcr.io/${{ github.repository_owner }}/gdac-auth:${{ inputs.image_tag }}
+
+            echo "Aplicando migrations..."
+            docker run --rm \
+              --env-file .env \
+              ghcr.io/${{ github.repository_owner }}/gdac-auth:${{ inputs.image_tag }} \
+              dotnet ef database update --no-build
+
+            echo "Subindo serviços..."
+            IMAGE_TAG=${{ inputs.image_tag }} docker compose \
+              -f docker/docker-compose.yml \
+              -f docker/docker-compose.prod.yml \
+              up -d --no-build
+
+            echo "Aguardando health check..."
+            timeout 90 bash -c 'until curl -sf http://localhost:8080/health/ready; do sleep 5; done'
+            echo "Deploy produção concluído."

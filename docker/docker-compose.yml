@@ -1,0 +1,62 @@
+services:
+  auth-db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_NAME:-gdac_auth}
+      MARIADB_USER: ${DB_USER:-gdac}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - auth-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD} --save 60 1
+    volumes:
+      - auth-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  auth-api:
+    build:
+      context: ..
+      dockerfile: Src/Gdac.Auth.Api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      auth-redis:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__Default: "Server=auth-db;Port=3306;Database=${DB_NAME:-gdac_auth};Uid=${DB_USER:-gdac};Pwd=${DB_PASSWORD};CharSet=utf8mb4;"
+      Redis__ConnectionString: "auth-redis:6379,password=${REDIS_PASSWORD}"
+      Jwt__PrivateKey: ${JWT_PRIVATE_KEY}
+      Jwt__PublicKey: ${JWT_PUBLIC_KEY}
+      Jwt__Issuer: ${JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE:-gdac-apps}
+      Email__Host: ${EMAIL_HOST}
+      Email__Port: ${EMAIL_PORT:-587}
+      Email__Username: ${EMAIL_USERNAME}
+      Email__Password: ${EMAIL_PASSWORD}
+      Email__From: ${EMAIL_FROM}
+      Email__BaseUrl: ${APP_BASE_URL}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  auth-db-data:
+  auth-redis-data:

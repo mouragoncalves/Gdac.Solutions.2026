@@ -6,6 +6,7 @@ public interface ICompanyRepository
 {
     Task<Company?> FindByIdAsync(Guid id, CancellationToken ct = default);
     Task<IReadOnlyList<Company>> FindByUserIdAsync(Guid userId, CancellationToken ct = default);
+    Task<IReadOnlyList<Company>> GetAllAsync(CancellationToken ct = default);
     Task AddAsync(Company company, CancellationToken ct = default);
     void Update(Company company);
 }

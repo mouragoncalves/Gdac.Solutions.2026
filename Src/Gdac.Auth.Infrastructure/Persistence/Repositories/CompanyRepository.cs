@@ -18,6 +18,9 @@ public class CompanyRepository(AppDbContext context) : ICompanyRepository
             .ToListAsync(ct);
     }
 
+    public async Task<IReadOnlyList<Company>> GetAllAsync(CancellationToken ct = default) =>
+        await context.Companies.OrderBy(c => c.Name).ToListAsync(ct);
+
     public async Task AddAsync(Company company, CancellationToken ct = default) =>
         await context.Companies.AddAsync(company, ct);
 

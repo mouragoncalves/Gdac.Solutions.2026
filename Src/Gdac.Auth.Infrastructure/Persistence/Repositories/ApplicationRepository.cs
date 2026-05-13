@@ -20,6 +20,9 @@ public class ApplicationRepository(AppDbContext context) : IApplicationRepositor
             .ToListAsync(ct);
     }
 
+    public async Task<IReadOnlyList<Domain.Entities.Application>> GetAllAsync(CancellationToken ct = default) =>
+        await context.Applications.OrderBy(a => a.Name).ToListAsync(ct);
+
     public async Task AddAsync(Domain.Entities.Application application, CancellationToken ct = default) =>
         await context.Applications.AddAsync(application, ct);
 

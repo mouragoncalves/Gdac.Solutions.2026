@@ -1,0 +1,28 @@
+services:
+  auth-api:
+    image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+
+  auth-nginx:
+    image: nginx:1.27-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d/production.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - auth-api
+
+  auth-db:
+    restart: always
+
+  auth-redis:
+    restart: always
