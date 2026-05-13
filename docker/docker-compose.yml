@@ -24,10 +24,8 @@ services:
       Redis__ConnectionString: "auth-redis:6379,password=${REDIS_PASSWORD}"
       Jwt__PrivateKey: ${JWT_PRIVATE_KEY}
       Jwt__PublicKey: ${JWT_PUBLIC_KEY}
-      Jwt__Issuer: ${JWT_ISSUER}
       Jwt__Audience: ${JWT_AUDIENCE:-gdac-apps}
       Email__Password: ${EMAIL_PASSWORD}
-      Email__BaseUrl: ${APP_BASE_URL}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
       interval: 15s
