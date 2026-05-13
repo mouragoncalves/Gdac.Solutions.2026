@@ -1,6 +1,0 @@
-@Gdac.Api.Auth_HostAddress = http://localhost:5177
-
-GET {{Gdac.Api.Auth_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

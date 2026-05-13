@@ -1,3 +1,13 @@
 <Solution>
-  <Project Path="Src/Gdac.Api.Auth/Gdac.Api.Auth.csproj" Id="f57e2f98-2cc5-4ce5-b3b7-be69c2ae44fb" />
+  <Folder Name="/Src/">
+    <Project Path="Src/Gdac.Auth.Api/Gdac.Auth.Api.csproj" />
+    <Project Path="Src/Gdac.Auth.Application/Gdac.Auth.Application.csproj" />
+    <Project Path="Src/Gdac.Auth.Domain/Gdac.Auth.Domain.csproj" />
+    <Project Path="Src/Gdac.Auth.Infrastructure/Gdac.Auth.Infrastructure.csproj" />
+    <Project Path="Src/Gdac.Auth.Shared/Gdac.Auth.Shared.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/Gdac.Auth.IntegrationTests/Gdac.Auth.IntegrationTests.csproj" />
+    <Project Path="Tests/Gdac.Auth.UnitTests/Gdac.Auth.UnitTests.csproj" />
+  </Folder>
 </Solution>
