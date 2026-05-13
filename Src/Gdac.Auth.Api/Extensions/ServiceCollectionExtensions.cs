@@ -36,8 +36,8 @@ public static class ServiceCollectionExtensions
         var connectionString = configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException("ConnectionStrings:Default não configurada.");
 
-        // MariaDB 11.4 — AutoDetect evitado pois requer conexão ativa no startup.
-        var serverVersion = new MariaDbServerVersion(new Version(11, 4, 0));
+        // MariaDB 10.4+ (XAMPP local) e 11.4 (servidor remoto) — AutoDetect evitado pois requer conexão ativa no startup.
+        var serverVersion = new MariaDbServerVersion(new Version(10, 4, 0));
         services.AddDbContext<AppDbContext>(options =>
             options.UseMySql(connectionString, serverVersion));
 
