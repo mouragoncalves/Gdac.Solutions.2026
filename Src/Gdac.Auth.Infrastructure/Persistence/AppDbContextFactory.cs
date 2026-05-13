@@ -10,10 +10,15 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
     public AppDbContext CreateDbContext(string[] args)
     {
+        // Usa o socket do XAMPP local para geração de migrations.
+        // Em CI o socket não existe — o dotnet-ef não precisa de conexão real para gerar migrations.
+        var connectionString = "Server=/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock;" +
+                               "Database=gdac_auth_dev;Uid=root;Pwd=;CharSet=utf8mb4;SslMode=None;";
+
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseMySql(
-                "Server=localhost;Database=gdac_auth_design;Uid=root;Pwd=design;",
-                ServerVersion.Parse("11.4.0-mariadb"),
+                connectionString,
+                new MySqlServerVersion(new Version(8, 0, 0)),
                 o => o.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))
             .Options;
 

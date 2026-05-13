@@ -1,4 +1,5 @@
 using FluentValidation;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using Gdac.Auth.Application.Common.Behaviors;
 using Gdac.Auth.Domain.Interfaces.Repositories;
 using Gdac.Auth.Domain.Interfaces.Services;
@@ -35,8 +36,11 @@ public static class ServiceCollectionExtensions
         var connectionString = configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException("ConnectionStrings:Default não configurada.");
 
+        // Versão mínima compatível com XAMPP (MySQL 5.7+) e MariaDB (10.4+).
+        // AutoDetect evitado pois requer conexão ativa no startup.
+        var serverVersion = new MySqlServerVersion(new Version(8, 0, 0));
         services.AddDbContext<AppDbContext>(options =>
-            options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+            options.UseMySql(connectionString, serverVersion));
 
         services.AddSingleton<RsaKeyProvider>();
         services.AddScoped<IUserRepository, UserRepository>();
