@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: [CI]
     types: [completed]
-    branches: [main]
+    branches: [staging]
 
 jobs:
   deploy:
@@ -28,17 +28,17 @@ jobs:
             cd /opt/gdac/auth
 
             echo "Atualizando imagem..."
-            docker pull ghcr.io/${{ github.repository_owner }}/gdac-auth:${{ github.sha }}
+            docker pull ghcr.io/${{ github.repository_owner }}/gdac-auth:${{ github.event.workflow_run.head_sha }}
 
             echo "Aplicando migrations..."
             docker run --rm \
               -e "ConnectionStrings__Default=Server=mysql.gdac.com.br;Port=3306;Database=gdac_auth_stg;Uid=gdac01;Pwd=${DB_STG_PASSWORD};CharSet=utf8mb4;SslMode=Preferred;" \
               --env-file .env \
-              ghcr.io/${{ github.repository_owner }}/gdac-auth:${{ github.sha }} \
+              ghcr.io/${{ github.repository_owner }}/gdac-auth:${{ github.event.workflow_run.head_sha }} \
               dotnet ef database update --no-build
 
             echo "Subindo serviços..."
-            IMAGE_TAG=${{ github.sha }} docker compose \
+            IMAGE_TAG=${{ github.event.workflow_run.head_sha }} docker compose \
               -f docker/docker-compose.yml \
               -f docker/docker-compose.staging.yml \
               up -d --no-build

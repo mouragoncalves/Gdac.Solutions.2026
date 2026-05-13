@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging, develop]
   pull_request:
-    branches: [main]
+    branches: [main, staging]
 
 env:
   DOTNET_VERSION: '10.0.x'
@@ -81,7 +81,7 @@ jobs:
     name: Docker Build
     runs-on: ubuntu-latest
     needs: build-and-test
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
 
     permissions:
       contents: read
@@ -98,12 +98,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set image tags
+        id: tags
+        run: |
+          SHA_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "value=${SHA_TAG},${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_OUTPUT
+          else
+            echo "value=${SHA_TAG},${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build and Push
         uses: docker/build-push-action@v6
         with:
           context: .
           file: Src/Gdac.Auth.Api/Dockerfile
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          tags: ${{ steps.tags.outputs.value }}
