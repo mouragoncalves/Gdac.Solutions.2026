@@ -3,6 +3,7 @@ services:
     image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG:-latest}
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
+      ConnectionStrings__Default: "Server=mysql.gdac.com.br;Port=3306;Database=gdac_auth_stg;Uid=gdac01;Pwd=${DB_STG_PASSWORD};CharSet=utf8mb4;SslMode=Preferred;"
 
   auth-nginx:
     image: nginx:1.27-alpine

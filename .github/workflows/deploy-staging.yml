@@ -16,10 +16,13 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
+        env:
+          DB_STG_PASSWORD: ${{ secrets.DB_STG_PASSWORD }}
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
+          envs: DB_STG_PASSWORD
           script: |
             set -e
             cd /opt/gdac/auth
@@ -29,6 +32,7 @@ jobs:
 
             echo "Aplicando migrations..."
             docker run --rm \
+              -e "ConnectionStrings__Default=Server=mysql.gdac.com.br;Port=3306;Database=gdac_auth_stg;Uid=gdac01;Pwd=${DB_STG_PASSWORD};CharSet=utf8mb4;SslMode=Preferred;" \
               --env-file .env \
               ghcr.io/${{ github.repository_owner }}/gdac-auth:${{ github.sha }} \
               dotnet ef database update --no-build
