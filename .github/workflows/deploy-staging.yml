@@ -25,7 +25,7 @@ jobs:
           envs: DB_STG_PASSWORD
           script: |
             set -e
-            cd /opt/gdac/auth
+            cd /opt/gdac/auth-stg
 
             echo "Atualizando imagem..."
             docker pull ghcr.io/${{ github.repository_owner }}/gdac-auth:${{ github.event.workflow_run.head_sha }}
