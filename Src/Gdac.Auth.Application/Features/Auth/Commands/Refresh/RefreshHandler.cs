@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Gdac.Auth.Domain.Exceptions;
 using Gdac.Auth.Domain.Interfaces.Repositories;
 using Gdac.Auth.Domain.Interfaces.Services;
@@ -9,7 +11,6 @@ namespace Gdac.Auth.Application.Features.Auth.Commands.Refresh;
 public class RefreshHandler(
     ITokenService tokenService,
     ISessionRepository sessions,
-    IPasswordHasher passwordHasher,
     IUnitOfWork unitOfWork,
     ILogger<RefreshHandler> logger
 ) : IRequestHandler<RefreshCommand, RefreshResult>
@@ -28,7 +29,9 @@ public class RefreshHandler(
             throw new UnauthorizedException("Token de renovação inválido ou expirado.");
 
         var tokenHash = tokenService.HashRefreshToken(cmd.RefreshToken);
-        if (!passwordHasher.Verify(cmd.RefreshToken, session.RefreshTokenHash, Domain.Enums.PasswordAlgorithm.Argon2id))
+        if (!CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(tokenHash),
+                Encoding.UTF8.GetBytes(session.RefreshTokenHash)))
             throw new UnauthorizedException("Token de renovação inválido ou expirado.");
 
         var newRefreshToken = tokenService.GenerateRefreshToken();
