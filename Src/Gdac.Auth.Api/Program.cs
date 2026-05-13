@@ -33,6 +33,11 @@ try
                 ? MailKit.Security.SecureSocketOptions.StartTls
                 : MailKit.Security.SecureSocketOptions.None;
 
+            var env = ctx.HostingEnvironment.EnvironmentName;
+            var subject = ctx.HostingEnvironment.IsProduction()
+                ? $"[URGENTE] [Production] [GDAC Auth] Erro crítico"
+                : $"[{env}] [GDAC Auth] Erro crítico";
+
             cfg.WriteTo.Email(
                 from:                     from ?? "noreply@gdac.com.br",
                 to:                       alertTo,
@@ -40,7 +45,7 @@ try
                 port:                     port,
                 connectionSecurity:       socketOptions,
                 credentials:              new System.Net.NetworkCredential(emailCfg["Username"], password),
-                subject:                  "[GDAC Auth] Erro crítico",
+                subject:                  subject,
                 restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Error
             );
         }
