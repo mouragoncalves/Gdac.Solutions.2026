@@ -18,13 +18,15 @@ jobs:
         uses: appleboy/ssh-action@v1
         env:
           DB_STG_PASSWORD: ${{ secrets.DB_STG_PASSWORD }}
+          JWT_PUBLIC_KEY: ${{ secrets.CI_JWT_PUBLIC_KEY }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
-          envs: DB_STG_PASSWORD,GH_TOKEN,GH_REPO
+          envs: DB_STG_PASSWORD,JWT_PUBLIC_KEY,EMAIL_PASSWORD,GH_TOKEN,GH_REPO
           script: |
             set -e
             REPO_DIR=/opt/gdac/core-stg
@@ -39,6 +41,12 @@ jobs:
 
             cd "$REPO_DIR"
             git pull origin staging
+
+            cat > .env << 'EOF'
+            REGISTRY=ghcr.io
+            IMAGE_NAME=${{ github.repository_owner }}/gdac-core
+            JWT_AUDIENCE=gdac-apps
+            EOF
 
             echo "Atualizando imagem..."
             docker pull ghcr.io/${{ github.repository_owner }}/gdac-core:${{ github.event.workflow_run.head_sha }}

@@ -35,13 +35,15 @@ jobs:
         uses: appleboy/ssh-action@v1
         env:
           DB_PROD_PASSWORD: ${{ secrets.DB_PROD_PASSWORD }}
+          JWT_PUBLIC_KEY: ${{ secrets.CI_JWT_PUBLIC_KEY }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         with:
           host: ${{ secrets.PRODUCTION_HOST }}
           username: ${{ secrets.PRODUCTION_USER }}
           key: ${{ secrets.PRODUCTION_SSH_KEY }}
-          envs: DB_PROD_PASSWORD,GH_TOKEN,GH_REPO
+          envs: DB_PROD_PASSWORD,JWT_PUBLIC_KEY,EMAIL_PASSWORD,GH_TOKEN,GH_REPO
           script: |
             set -e
             REPO_DIR=/opt/gdac/core
@@ -54,6 +56,16 @@ jobs:
 
             cd "$REPO_DIR"
             git pull origin main
+
+            # Gera .env com valores estáticos não-sensíveis.
+            # JWT_PUBLIC_KEY, EMAIL_PASSWORD e DB_PROD_PASSWORD chegam via
+            # variáveis de shell (envs acima) e o docker compose os lê
+            # automaticamente do ambiente — sem precisar estar no .env.
+            cat > .env << 'EOF'
+            REGISTRY=ghcr.io
+            IMAGE_NAME=${{ github.repository_owner }}/gdac-core
+            JWT_AUDIENCE=gdac-apps
+            EOF
 
             echo "Atualizando imagem..."
             docker pull ghcr.io/${{ github.repository_owner }}/gdac-core:${{ steps.tag.outputs.value }}
