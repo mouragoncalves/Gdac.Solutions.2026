@@ -62,5 +62,11 @@ jobs:
               up -d --no-build --remove-orphans
 
             echo "Aguardando health check..."
-            timeout 60 bash -c 'until curl -sf http://localhost:8081/health/ready; do sleep 3; done'
+            if ! timeout 60 bash -c 'until curl -sf http://localhost:8081/health/ready; do sleep 3; done'; then
+              echo "--- LOGS DO CONTAINER (últimas 50 linhas) ---"
+              docker logs --tail 50 gdac-auth-stg-auth-api-1 2>&1 || true
+              echo "--- HEALTH CHECK RESPONSE ---"
+              curl -s http://localhost:8081/health/ready 2>&1 || true
+              exit 1
+            fi
             echo "Deploy staging Auth concluído."
