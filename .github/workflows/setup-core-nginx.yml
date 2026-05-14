@@ -20,10 +20,6 @@ jobs:
           script: |
             set -e
 
-            echo "==> Copiando configs nginx do repositório..."
-            cp /opt/gdac/core/docker/Core/nginx/conf.d/production.conf /etc/nginx/conf.d/core-prod.conf
-            cp /opt/gdac/core/docker/Core/nginx/conf.d/staging.conf    /etc/nginx/conf.d/core-stg.conf
-
             echo "==> Emitindo certificado SSL (nginx para ~2s)..."
             systemctl stop nginx
             certbot certonly \
@@ -33,7 +29,6 @@ jobs:
               --non-interactive \
               --agree-tos \
               --email suporte@gdac.com.br
-            systemctl start nginx
 
             echo "==> Escrevendo configs nginx finais com SSL..."
             cat > /etc/nginx/conf.d/core-prod.conf << 'NGINX'
@@ -114,6 +109,6 @@ jobs:
             }
             NGINX
 
-            echo "==> Validando e recarregando nginx..."
-            nginx -t && systemctl reload nginx
+            echo "==> Validando e iniciando nginx..."
+            nginx -t && systemctl start nginx
             echo "Setup Core nginx concluído."
