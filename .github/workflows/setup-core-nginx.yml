@@ -25,30 +25,17 @@ jobs:
             cp /opt/gdac/core/docker/Core/nginx/conf.d/staging.conf    /etc/nginx/conf.d/core-stg.conf
 
             echo "==> Criando configs HTTP temporárias para o certbot..."
-            cat > /etc/nginx/conf.d/core-prod.conf << 'NGINX'
-            server {
-                listen 80;
-                server_name core.gdac.com.br;
-                location /.well-known/acme-challenge/ { root /var/www/certbot; }
-                location / { return 200 'ok'; add_header Content-Type text/plain; }
-            }
-            NGINX
+            printf 'server {\n    listen 80;\n    server_name core.gdac.com.br;\n}\n' \
+              > /etc/nginx/conf.d/core-prod.conf
 
-            cat > /etc/nginx/conf.d/core-stg.conf << 'NGINX'
-            server {
-                listen 80;
-                server_name core-stg.gdac.com.br;
-                location /.well-known/acme-challenge/ { root /var/www/certbot; }
-                location / { return 200 'ok'; add_header Content-Type text/plain; }
-            }
-            NGINX
+            printf 'server {\n    listen 80;\n    server_name core-stg.gdac.com.br;\n}\n' \
+              > /etc/nginx/conf.d/core-stg.conf
 
-            mkdir -p /var/www/certbot
             nginx -t && systemctl reload nginx
 
             echo "==> Emitindo certificado SSL..."
             certbot certonly \
-              --webroot -w /var/www/certbot \
+              --nginx \
               -d core.gdac.com.br \
               -d core-stg.gdac.com.br \
               --non-interactive \
