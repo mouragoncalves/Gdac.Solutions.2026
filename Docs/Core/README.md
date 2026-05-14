@@ -17,6 +17,6 @@ Serviço centralizado de perfis de usuário e diretório de empresas da platafor
 | Porta (dev) | 5269 |
 | Porta (staging) | 8083 |
 | Porta (produção) | 8082 |
-| Banco (prod) | MariaDB `gdac02` (tabelas `core_*`) |
+| Banco (prod) | MariaDB `gdac04` (tabelas `core_*`) |
 | JWT | Valida tokens emitidos pelo `Gdac.Auth.Api` |
 | Redis | Não usa |

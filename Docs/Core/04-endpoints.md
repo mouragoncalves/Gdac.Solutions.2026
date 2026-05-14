@@ -142,6 +142,148 @@ Remove o vínculo de um usuário com a empresa.
 
 ---
 
+## Dados CNPJ — `/companies/{id}/cnpj-data`
+
+### PUT /companies/{id}/cnpj-data
+Sincroniza campos de dados públicos do CNPJ na empresa (natureza jurídica, porte, Simples Nacional, SIMEI e capital social).
+
+**Request body:**
+```json
+{
+  "cnpjBase": "12345678",
+  "natureId": 2062,
+  "natureText": "Sociedade Empresária Limitada",
+  "sizeId": 5,
+  "sizeAcronym": "ME",
+  "sizeText": "Micro Empresa",
+  "equity": 10000.00,
+  "jurisdiction": "SP",
+  "simplesOptant": true,
+  "simplesSince": "2020-01-01",
+  "simeiOptant": false,
+  "simeiSince": null
+}
+```
+
+**Response 204** em caso de sucesso.
+
+---
+
+## Sócios — `/companies/{id}/members`
+
+### GET /companies/{id}/members
+Lista todos os sócios da empresa.
+
+**Response 200:**
+```json
+[
+  {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "since": "2020-03-15",
+    "personType": 1,
+    "personName": "João da Silva",
+    "personTaxId": "123.456.789-00",
+    "personAge": 45,
+    "roleId": 49,
+    "roleText": "Sócio-Administrador",
+    "agentName": null,
+    "agentTaxId": null,
+    "agentRoleId": null,
+    "agentRoleText": null
+  }
+]
+```
+
+`personType`: `1` = Natural (pessoa física), `2` = Legal (pessoa jurídica).
+
+### PUT /companies/{id}/members
+Substitui todos os sócios da empresa (operação full-replace).
+
+**Request body:**
+```json
+{
+  "members": [
+    {
+      "personType": 1,
+      "personName": "João da Silva",
+      "roleId": 49,
+      "roleText": "Sócio-Administrador",
+      "since": "2020-03-15",
+      "personExternalId": "ext-123",
+      "personTaxId": "123.456.789-00",
+      "personAge": 45,
+      "agentName": null,
+      "agentTaxId": null,
+      "agentRoleId": null,
+      "agentRoleText": null
+    }
+  ]
+}
+```
+
+Campos obrigatórios: `personType`, `personName`, `roleId`, `roleText`.  
+Campos opcionais: `since`, `personExternalId`, `personTaxId`, `personAge`, `agentName`, `agentTaxId`, `agentRoleId`, `agentRoleText`.
+
+**Response 204** em caso de sucesso.
+
+---
+
+## Estabelecimentos — `/companies/{id}/offices`
+
+### GET /companies/{id}/offices
+Lista todos os estabelecimentos (CNPJs filiais/matriz) da empresa.
+
+**Response 200:**
+```json
+[
+  {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "taxId": "12345678000190",
+    "alias": "Filial SP",
+    "founded": "2018-06-01",
+    "isHead": false,
+    "statusId": 2,
+    "statusText": "Ativa",
+    "statusDate": "2018-06-01",
+    "reasonId": null,
+    "reasonText": null,
+    "mainActivityId": 6201500,
+    "mainActivityText": "Desenvolvimento de programas de computador sob encomenda"
+  }
+]
+```
+
+### PUT /companies/{id}/offices
+Substitui todos os estabelecimentos da empresa (operação full-replace).
+
+**Request body:**
+```json
+{
+  "offices": [
+    {
+      "taxId": "12345678000190",
+      "isHead": false,
+      "statusId": 2,
+      "statusText": "Ativa",
+      "mainActivityId": 6201500,
+      "mainActivityText": "Desenvolvimento de programas de computador sob encomenda",
+      "alias": "Filial SP",
+      "founded": "2018-06-01",
+      "statusDate": "2018-06-01",
+      "reasonId": null,
+      "reasonText": null
+    }
+  ]
+}
+```
+
+Campos obrigatórios: `taxId`, `isHead`, `statusId`, `statusText`, `mainActivityId`, `mainActivityText`.  
+Campos opcionais: `alias`, `founded`, `statusDate`, `reasonId`, `reasonText`.
+
+**Response 204** em caso de sucesso.
+
+---
+
 ## Health Checks
 
 | Endpoint | Descrição |

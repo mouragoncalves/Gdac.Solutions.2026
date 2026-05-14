@@ -173,131 +173,28 @@ cat /root/.ssh/gdac_deploy
 
 ## 5. VPS — arquivos .env
 
-Cada serviço e ambiente tem seu próprio `.env`. O Docker Compose lê com `--env-file .env`.
+Os arquivos `.env` nos VPS são **gerados automaticamente pelos workflows de deploy** — não é necessário criá-los manualmente.
 
-### Auth — Produção (`/opt/gdac/auth/.env`)
+### O que o .env gerado contém
 
-```dotenv
-DB_PROD_PASSWORD=senha_do_banco_prod
-REDIS_PASSWORD=senha_redis_forte
-
-JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvg...\n-----END PRIVATE KEY-----"
-JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\nMIIBIj...\n-----END PUBLIC KEY-----"
-JWT_AUDIENCE=gdac-apps
-
-EMAIL_PASSWORD=senha_smtp
-
-REGISTRY=ghcr.io
-IMAGE_NAME=<owner>/gdac-auth
-IMAGE_TAG=latest
-ASPNETCORE_ENVIRONMENT=Production
-```
-
-### Auth — Staging (`/opt/gdac/auth-stg/.env`)
+O workflow grava no VPS apenas os valores estáticos não-sensíveis:
 
 ```dotenv
-DB_STG_PASSWORD=senha_do_banco_stg
-REDIS_PASSWORD=senha_redis_stg
-
-JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...(chave stg)...\n-----END PRIVATE KEY-----"
-JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...(chave stg)...\n-----END PUBLIC KEY-----"
-JWT_AUDIENCE=gdac-apps
-
-EMAIL_PASSWORD=senha_smtp
-
 REGISTRY=ghcr.io
-IMAGE_NAME=<owner>/gdac-auth
-IMAGE_TAG=staging
-ASPNETCORE_ENVIRONMENT=Staging
+IMAGE_NAME=<owner>/gdac-auth   # ou gdac-core
+JWT_AUDIENCE=gdac-apps
 ```
 
-### Core — Produção (`/opt/gdac/core/.env`)
+### Como os secrets sensíveis chegam ao container
 
-```dotenv
-DB_PROD_PASSWORD=senha_do_banco_prod
+Senhas e chaves JWT **não são gravadas no `.env`**. Elas são injetadas diretamente no ambiente do container pelo `appleboy/ssh-action` via `envs:`, durante a execução do `docker compose up`. O container recebe as variáveis em tempo de execução sem que os valores toquem o disco do VPS em texto plano.
 
-# Mesma chave pública do Auth prod (Core só valida tokens, não emite)
-JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\nMIIBIj...\n-----END PUBLIC KEY-----"
-JWT_AUDIENCE=gdac-apps
+Secrets sensíveis gerenciados dessa forma:
 
-EMAIL_PASSWORD=senha_smtp
-
-REGISTRY=ghcr.io
-IMAGE_NAME=<owner>/gdac-core
-IMAGE_TAG=latest
-ASPNETCORE_ENVIRONMENT=Production
-```
-
-### Core — Staging (`/opt/gdac/core-stg/.env`)
-
-```dotenv
-DB_STG_PASSWORD=senha_do_banco_stg
-
-# Mesma chave pública do Auth stg
-JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...(chave stg)...\n-----END PUBLIC KEY-----"
-JWT_AUDIENCE=gdac-apps
-
-EMAIL_PASSWORD=senha_smtp
-
-REGISTRY=ghcr.io
-IMAGE_NAME=<owner>/gdac-core
-IMAGE_TAG=staging
-ASPNETCORE_ENVIRONMENT=Staging
-```
-
-### Script Python para gerar os .env
-
-Salve como `gerar_env.py` e execute **localmente** (nunca commite este arquivo):
-
-```python
-import json, pathlib, sys
-
-secrets_file = pathlib.Path(sys.argv[1])  # JSON com as chaves
-env_path     = pathlib.Path(sys.argv[2])  # caminho de saída
-service      = sys.argv[3]                # "auth" ou "core"
-
-secrets = json.loads(secrets_file.read_text())
-
-public = secrets["Jwt:PublicKey"].replace("\n", "\\n")
-
-if service == "auth":
-    private = secrets["Jwt:PrivateKey"].replace("\n", "\\n")
-    content = f"""DB_PROD_PASSWORD={secrets['db_password']}
-REDIS_PASSWORD={secrets['redis_password']}
-JWT_PRIVATE_KEY="{private}"
-JWT_PUBLIC_KEY="{public}"
-JWT_AUDIENCE=gdac-apps
-EMAIL_PASSWORD={secrets['email_password']}
-REGISTRY=ghcr.io
-IMAGE_NAME=<owner>/gdac-auth
-IMAGE_TAG=latest
-ASPNETCORE_ENVIRONMENT=Production
-"""
-else:
-    content = f"""DB_PROD_PASSWORD={secrets['db_password']}
-JWT_PUBLIC_KEY="{public}"
-JWT_AUDIENCE=gdac-apps
-EMAIL_PASSWORD={secrets['email_password']}
-REGISTRY=ghcr.io
-IMAGE_NAME=<owner>/gdac-core
-IMAGE_TAG=latest
-ASPNETCORE_ENVIRONMENT=Production
-"""
-
-env_path.write_text(content)
-print(f"OK: {env_path}")
-```
-
-```bash
-python3 gerar_env.py secrets_prod.json /tmp/env_auth_prod auth
-scp /tmp/env_auth_prod root@<IP>:/opt/gdac/auth/.env
-ssh root@<IP> "chmod 600 /opt/gdac/auth/.env"
-
-python3 gerar_env.py secrets_prod.json /tmp/env_core_prod core
-scp /tmp/env_core_prod root@<IP>:/opt/gdac/core/.env
-ssh root@<IP> "chmod 600 /opt/gdac/core/.env"
-rm /tmp/env_*
-```
+- Senhas de banco: `AUTH_DB_PROD_PASSWORD`, `AUTH_DB_STG_PASSWORD`, `CORE_DB_PROD_PASSWORD`, `CORE_DB_STG_PASSWORD`
+- Chaves JWT: `AUTH_JWT_PRIVATE_KEY`, `AUTH_JWT_PUBLIC_KEY`
+- Senhas Redis: `AUTH_REDIS_PROD_PASSWORD`, `AUTH_REDIS_STG_PASSWORD`
+- Senhas SMTP: `AUTH_EMAIL_PASSWORD`, `CORE_EMAIL_PASSWORD`
 
 ---
 
@@ -307,18 +204,20 @@ rm /tmp/env_*
 
 Acesse **Settings → Secrets and variables → Actions** no repositório.
 
-| Secret | Workflow(s) | Valor |
-|--------|-------------|-------|
-| `PRODUCTION_HOST` | todos deploy-*-production | IP do VPS |
-| `PRODUCTION_USER` | todos deploy-*-production | `root` |
-| `PRODUCTION_SSH_KEY` | todos deploy-*-production | Conteúdo de `/root/.ssh/gdac_deploy` |
-| `DB_PROD_PASSWORD` | deploy-auth/core-production | Senha do banco `gdac02` |
-| `STAGING_HOST` | todos deploy-*-staging | IP do VPS |
-| `STAGING_USER` | todos deploy-*-staging | `root` |
-| `STAGING_SSH_KEY` | todos deploy-*-staging | Mesma chave SSH |
-| `DB_STG_PASSWORD` | deploy-auth/core-staging | Senha do banco `gdac01` |
-| `CI_JWT_PRIVATE_KEY` | ci-auth (integration tests) | Chave privada JWT para CI |
-| `CI_JWT_PUBLIC_KEY` | ci-auth, ci-core (integration tests) | Chave pública JWT para CI |
+| Secret | Usado em | Descrição |
+|--------|----------|-----------|
+| `AUTH_DB_PROD_PASSWORD` | deploy-auth-production | Senha banco `gdac02` |
+| `AUTH_DB_STG_PASSWORD` | deploy-auth-staging | Senha banco `gdac01` |
+| `AUTH_JWT_PRIVATE_KEY` | ci-auth, deploy-auth-* | Chave privada RSA 4096 |
+| `AUTH_JWT_PUBLIC_KEY` | ci-auth, ci-core, deploy-* | Chave pública RSA |
+| `AUTH_REDIS_PROD_PASSWORD` | deploy-auth-production | Redis Auth prod |
+| `AUTH_REDIS_STG_PASSWORD` | deploy-auth-staging | Redis Auth stg |
+| `AUTH_EMAIL_PASSWORD` | deploy-auth-* | SMTP para Auth |
+| `CORE_DB_PROD_PASSWORD` | deploy-core-production | Senha banco `gdac04` |
+| `CORE_DB_STG_PASSWORD` | deploy-core-staging | Senha banco `gdac03` |
+| `CORE_EMAIL_PASSWORD` | deploy-core-* | SMTP para Core |
+| `PRODUCTION_HOST` / `PRODUCTION_USER` / `PRODUCTION_SSH_KEY` | deploy-*-production | Environment-level |
+| `STAGING_HOST` / `STAGING_USER` / `STAGING_SSH_KEY` | deploy-*-staging | Environment-level |
 
 ### 6.2 Environments do GitHub
 
@@ -388,17 +287,17 @@ curl https://core-api-stg.gdac.com.br/health/ready
 
 MariaDB 11.4 externo em `mysql.gdac.com.br` (KingHost).
 
-| Ambiente | Banco | Usuário | Serviços que usam |
-|----------|-------|---------|-------------------|
-| Produção | `gdac02` | `gdac02` | Auth + Core (tabelas `core_*`) |
-| Staging  | `gdac01` | `gdac01` | Auth + Core (tabelas `core_*`) |
+| Ambiente | Auth (banco) | Core (banco) | Servidor |
+|----------|-------------|-------------|----------|
+| Produção | `gdac02` | `gdac04` | `mysql.gdac.com.br` |
+| Staging  | `gdac01` | `gdac03` | `mysql.gdac.com.br` |
 
 ### Tabelas por serviço
 
 | Serviço | Tabelas |
 |---------|---------|
 | Auth | `users`, `refresh_tokens` |
-| Core | `core_user_profiles`, `core_companies`, `core_user_company_links` |
+| Core | `core_user_profiles`, `core_companies`, `core_company_members`, `core_company_offices`, `core_user_company_links` |
 
 Migrations são aplicadas automaticamente na inicialização (`db.Database.Migrate()`).
 
@@ -450,7 +349,7 @@ A senha SMTP (`EMAIL_PASSWORD`) vem do `.env`. Para desenvolvimento local, use M
 | URL | `http://localhost:5269` | `https://core-api-stg.gdac.com.br` | `https://core-api.gdac.com.br` |
 | Branch | `develop` | `staging` | `main` |
 | Porta interna | – | `8083` | `8082` |
-| Banco | local (XAMPP) | `gdac01` | `gdac02` |
+| Banco | local (XAMPP) | `gdac03` | `gdac04` |
 | ASPNETCORE_ENVIRONMENT | `Development` | `Staging` | `Production` |
 | Swagger | habilitado | habilitado | desabilitado |
 | JWT | valida com chave pública do Auth stg | valida com chave pública do Auth stg | valida com chave pública do Auth prod |

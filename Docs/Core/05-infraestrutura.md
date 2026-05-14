@@ -8,6 +8,8 @@ O Core usa o mesmo servidor MariaDB do Auth (`mysql.gdac.com.br`), mas com tabel
 |--------|----------|
 | `core_user_profiles` | UserProfile |
 | `core_companies` | Company |
+| `core_company_members` | CompanyMember |
+| `core_company_offices` | CompanyOffice |
 | `core_user_company_links` | UserCompanyLink |
 
 ### CoreDbContext
@@ -17,6 +19,8 @@ public class CoreDbContext(DbContextOptions<CoreDbContext> options) : DbContext(
 {
     public DbSet<UserProfile>     UserProfiles     => Set<UserProfile>();
     public DbSet<Company>         Companies        => Set<Company>();
+    public DbSet<CompanyMember>   CompanyMembers   => Set<CompanyMember>();
+    public DbSet<CompanyOffice>   CompanyOffices   => Set<CompanyOffice>();
     public DbSet<UserCompanyLink> UserCompanyLinks => Set<UserCompanyLink>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -54,6 +58,8 @@ Cada entidade tem seu repositório scoped registrado em `AddInfrastructure`:
 |-----------|--------------|
 | `IUserProfileRepository` | `UserProfileRepository` |
 | `ICompanyRepository` | `CompanyRepository` |
+| `ICompanyMemberRepository` | `CompanyMemberRepository` |
+| `ICompanyOfficeRepository` | `CompanyOfficeRepository` |
 | `IUserCompanyLinkRepository` | `UserCompanyLinkRepository` |
 | `IUnitOfWork` | `UnitOfWork` |
 
@@ -79,6 +85,8 @@ services.AddDbContext<CoreDbContext>(options =>
 
 services.AddScoped<IUserProfileRepository, UserProfileRepository>();
 services.AddScoped<ICompanyRepository, CompanyRepository>();
+services.AddScoped<ICompanyMemberRepository, CompanyMemberRepository>();
+services.AddScoped<ICompanyOfficeRepository, CompanyOfficeRepository>();
 services.AddScoped<IUserCompanyLinkRepository, UserCompanyLinkRepository>();
 services.AddScoped<IUnitOfWork, UnitOfWork>();
 services.AddScoped<IEmailService, EmailService>();
