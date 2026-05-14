@@ -56,7 +56,7 @@ jobs:
       - name: Integration Tests
         env:
           ConnectionStrings__Default: "Server=localhost;Port=3306;Database=gdac_core_test;Uid=gdac;Pwd=ci_password;CharSet=utf8mb4;"
-          Jwt__PublicKey: ${{ secrets.CI_JWT_PUBLIC_KEY }}
+          Jwt__PublicKey: ${{ secrets.AUTH_JWT_PUBLIC_KEY }}
           Jwt__Issuer: "https://auth.gdac.com.br"
         run: dotnet test Tests/Core/Gdac.Core.IntegrationTests --no-build -c Release --logger "trx;LogFileName=integration-results.trx"
 

@@ -67,8 +67,8 @@ jobs:
         env:
           ConnectionStrings__Default: "Server=localhost;Port=3306;Database=gdac_auth_test;Uid=gdac;Pwd=ci_password;CharSet=utf8mb4;"
           Redis__ConnectionString: "localhost:6379"
-          Jwt__PrivateKey: ${{ secrets.CI_JWT_PRIVATE_KEY }}
-          Jwt__PublicKey: ${{ secrets.CI_JWT_PUBLIC_KEY }}
+          Jwt__PrivateKey: ${{ secrets.AUTH_JWT_PRIVATE_KEY }}
+          Jwt__PublicKey: ${{ secrets.AUTH_JWT_PUBLIC_KEY }}
           Jwt__Issuer: "https://auth.gdac.com.br"
         run: dotnet test Tests/Auth/Gdac.Auth.IntegrationTests --no-build -c Release --logger "trx;LogFileName=integration-results.trx"
 

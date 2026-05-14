@@ -18,15 +18,37 @@ jobs:
         uses: appleboy/ssh-action@v1
         env:
           DB_STG_PASSWORD: ${{ secrets.AUTH_DB_STG_PASSWORD }}
+          JWT_PRIVATE_KEY: ${{ secrets.AUTH_JWT_PRIVATE_KEY }}
+          JWT_PUBLIC_KEY: ${{ secrets.AUTH_JWT_PUBLIC_KEY }}
+          REDIS_PASSWORD: ${{ secrets.AUTH_REDIS_STG_PASSWORD }}
+          EMAIL_PASSWORD: ${{ secrets.AUTH_EMAIL_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
-          envs: DB_STG_PASSWORD
+          envs: DB_STG_PASSWORD,JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,REDIS_PASSWORD,EMAIL_PASSWORD,GH_TOKEN,GH_REPO
           script: |
             set -e
-            cd /opt/gdac/auth-stg
+            REPO_DIR=/opt/gdac/auth-stg
+
+            if [ ! -d "$REPO_DIR/.git" ]; then
+              echo "Primeira execução: clonando repositório..."
+              mkdir -p "$REPO_DIR"
+              git clone "https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git" "$REPO_DIR"
+              cd "$REPO_DIR"
+              git checkout staging
+            fi
+
+            cd "$REPO_DIR"
             git pull origin staging
+
+            cat > .env << 'EOF'
+            REGISTRY=ghcr.io
+            IMAGE_NAME=${{ github.repository_owner }}/gdac-auth
+            JWT_AUDIENCE=gdac-apps
+            EOF
 
             echo "Atualizando imagem..."
             docker pull ghcr.io/${{ github.repository_owner }}/gdac-auth:${{ github.event.workflow_run.head_sha }}
@@ -41,4 +63,4 @@ jobs:
 
             echo "Aguardando health check..."
             timeout 60 bash -c 'until curl -sf http://localhost:8081/health/ready; do sleep 3; done'
-            echo "Deploy staging concluído."
+            echo "Deploy staging Auth concluído."

@@ -35,8 +35,8 @@ jobs:
         uses: appleboy/ssh-action@v1
         env:
           DB_PROD_PASSWORD: ${{ secrets.CORE_DB_PROD_PASSWORD }}
-          JWT_PUBLIC_KEY: ${{ secrets.CI_JWT_PUBLIC_KEY }}
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          JWT_PUBLIC_KEY: ${{ secrets.AUTH_JWT_PUBLIC_KEY }}
+          EMAIL_PASSWORD: ${{ secrets.CORE_EMAIL_PASSWORD }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         with:

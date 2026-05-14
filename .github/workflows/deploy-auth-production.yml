@@ -35,14 +35,28 @@ jobs:
         uses: appleboy/ssh-action@v1
         env:
           DB_PROD_PASSWORD: ${{ secrets.AUTH_DB_PROD_PASSWORD }}
+          JWT_PRIVATE_KEY: ${{ secrets.AUTH_JWT_PRIVATE_KEY }}
+          JWT_PUBLIC_KEY: ${{ secrets.AUTH_JWT_PUBLIC_KEY }}
+          REDIS_PASSWORD: ${{ secrets.AUTH_REDIS_PROD_PASSWORD }}
+          EMAIL_PASSWORD: ${{ secrets.AUTH_EMAIL_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         with:
           host: ${{ secrets.PRODUCTION_HOST }}
           username: ${{ secrets.PRODUCTION_USER }}
           key: ${{ secrets.PRODUCTION_SSH_KEY }}
-          envs: DB_PROD_PASSWORD
+          envs: DB_PROD_PASSWORD,JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,REDIS_PASSWORD,EMAIL_PASSWORD,GH_TOKEN,GH_REPO
           script: |
             set -e
-            cd /opt/gdac/auth
+            REPO_DIR=/opt/gdac/auth
+
+            if [ ! -d "$REPO_DIR/.git" ]; then
+              echo "Primeira execução: clonando repositório..."
+              mkdir -p "$REPO_DIR"
+              git clone "https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git" "$REPO_DIR"
+            fi
+
+            cd "$REPO_DIR"
             git pull origin main
             mkdir -p backups
 
@@ -51,6 +65,12 @@ jobs:
               mariadb-dump -h mysql.gdac.com.br -u gdac02 -p"${DB_PROD_PASSWORD}" gdac02 \
               > backups/pre-deploy-$(date +%Y%m%d-%H%M%S).sql \
               || echo "⚠️ Backup falhou — verifique permissões do gdac02 para o IP do VPS."
+
+            cat > .env << 'EOF'
+            REGISTRY=ghcr.io
+            IMAGE_NAME=${{ github.repository_owner }}/gdac-auth
+            JWT_AUDIENCE=gdac-apps
+            EOF
 
             echo "Atualizando imagem..."
             docker pull ghcr.io/${{ github.repository_owner }}/gdac-auth:${{ steps.tag.outputs.value }}
@@ -64,5 +84,11 @@ jobs:
               up -d --no-build --remove-orphans
 
             echo "Aguardando health check..."
-            timeout 90 bash -c 'until curl -sf http://localhost:8080/health/ready; do sleep 5; done'
-            echo "Deploy produção concluído."
+            if ! timeout 90 bash -c 'until curl -sf http://localhost:8080/health/ready; do sleep 5; done'; then
+              echo "--- LOGS DO CONTAINER (últimas 50 linhas) ---"
+              docker logs --tail 50 gdac-auth-prod-auth-api-1 2>&1 || true
+              echo "--- HEALTH CHECK RESPONSE ---"
+              curl -s http://localhost:8080/health/ready 2>&1 || true
+              exit 1
+            fi
+            echo "Deploy produção Auth concluído."
