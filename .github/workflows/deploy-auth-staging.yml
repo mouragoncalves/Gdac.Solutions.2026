@@ -33,6 +33,7 @@ jobs:
 
             echo "Subindo serviços..."
             IMAGE_TAG=${{ github.event.workflow_run.head_sha }} docker compose \
+              -p gdac-auth-stg \
               --env-file .env \
               -f docker/Auth/docker-compose.yml \
               -f docker/Auth/docker-compose.staging.yml \

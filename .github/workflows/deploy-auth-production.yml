@@ -57,6 +57,7 @@ jobs:
 
             echo "Subindo serviços..."
             IMAGE_TAG=${{ steps.tag.outputs.value }} docker compose \
+              -p gdac-auth-prod \
               --env-file .env \
               -f docker/Auth/docker-compose.yml \
               -f docker/Auth/docker-compose.prod.yml \
