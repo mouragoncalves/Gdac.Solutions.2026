@@ -34,7 +34,7 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         env:
-          DB_PROD_PASSWORD: ${{ secrets.DB_PROD_PASSWORD }}
+          DB_PROD_PASSWORD: ${{ secrets.AUTH_DB_PROD_PASSWORD }}
         with:
           host: ${{ secrets.PRODUCTION_HOST }}
           username: ${{ secrets.PRODUCTION_USER }}
