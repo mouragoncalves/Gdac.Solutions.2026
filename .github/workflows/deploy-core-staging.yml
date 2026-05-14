@@ -17,7 +17,7 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         env:
-          DB_STG_PASSWORD: ${{ secrets.DB_STG_PASSWORD }}
+          DB_STG_PASSWORD: ${{ secrets.CORE_DB_STG_PASSWORD }}
           JWT_PUBLIC_KEY: ${{ secrets.CI_JWT_PUBLIC_KEY }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
