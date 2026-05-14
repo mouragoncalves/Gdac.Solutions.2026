@@ -7,11 +7,17 @@
     <Project Path="Src/Auth/Gdac.Auth.Shared/Gdac.Auth.Shared.csproj" />
   </Folder>
   <Folder Name="/Src/Core/">
+    <Project Path="Src/Core/Gdac.Core.Api/Gdac.Core.Api.csproj" />
+    <Project Path="Src/Core/Gdac.Core.Application/Gdac.Core.Application.csproj" />
+    <Project Path="Src/Core/Gdac.Core.Domain/Gdac.Core.Domain.csproj" />
+    <Project Path="Src/Core/Gdac.Core.Infrastructure/Gdac.Core.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Tests/Auth/">
     <Project Path="Tests/Auth/Gdac.Auth.IntegrationTests/Gdac.Auth.IntegrationTests.csproj" />
     <Project Path="Tests/Auth/Gdac.Auth.UnitTests/Gdac.Auth.UnitTests.csproj" />
   </Folder>
   <Folder Name="/Tests/Core/">
+    <Project Path="Tests/Core/Gdac.Core.IntegrationTests/Gdac.Core.IntegrationTests.csproj" />
+    <Project Path="Tests/Core/Gdac.Core.UnitTests/Gdac.Core.UnitTests.csproj" />
   </Folder>
 </Solution>

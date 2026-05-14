@@ -1,0 +1,44 @@
+name: Deploy Core Staging
+
+on:
+  workflow_run:
+    workflows: [CI Core]
+    types: [completed]
+    branches: [staging]
+
+jobs:
+  deploy:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    environment: staging
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          DB_STG_PASSWORD: ${{ secrets.DB_STG_PASSWORD }}
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          envs: DB_STG_PASSWORD
+          script: |
+            set -e
+            cd /opt/gdac/core-stg
+            git pull origin staging
+
+            echo "Atualizando imagem..."
+            docker pull ghcr.io/${{ github.repository_owner }}/gdac-core:${{ github.event.workflow_run.head_sha }}
+
+            echo "Subindo serviços..."
+            IMAGE_TAG=${{ github.event.workflow_run.head_sha }} docker compose \
+              -p gdac-core-stg \
+              --env-file .env \
+              -f docker/Core/docker-compose.yml \
+              -f docker/Core/docker-compose.staging.yml \
+              up -d --no-build --remove-orphans
+
+            echo "Aguardando health check..."
+            timeout 60 bash -c 'until curl -sf http://localhost:8083/health/ready; do sleep 3; done'
+            echo "Deploy staging Core concluído."

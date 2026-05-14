@@ -1,0 +1,61 @@
+name: Deploy Core Production
+
+on:
+  workflow_run:
+    workflows: [CI Core]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Tag da imagem para deploy (SHA do commit)'
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    environment: production
+
+    steps:
+      - name: Resolve image tag
+        id: tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "value=${{ inputs.image_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          DB_PROD_PASSWORD: ${{ secrets.DB_PROD_PASSWORD }}
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          envs: DB_PROD_PASSWORD
+          script: |
+            set -e
+            cd /opt/gdac/core
+            git pull origin main
+
+            echo "Atualizando imagem..."
+            docker pull ghcr.io/${{ github.repository_owner }}/gdac-core:${{ steps.tag.outputs.value }}
+
+            echo "Subindo serviços..."
+            IMAGE_TAG=${{ steps.tag.outputs.value }} docker compose \
+              -p gdac-core-prod \
+              --env-file .env \
+              -f docker/Core/docker-compose.yml \
+              -f docker/Core/docker-compose.prod.yml \
+              up -d --no-build --remove-orphans
+
+            echo "Aguardando health check..."
+            timeout 90 bash -c 'until curl -sf http://localhost:8082/health/ready; do sleep 5; done'
+            echo "Deploy produção Core concluído."
