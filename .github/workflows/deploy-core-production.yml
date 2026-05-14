@@ -79,5 +79,11 @@ jobs:
               up -d --no-build --remove-orphans
 
             echo "Aguardando health check..."
-            timeout 90 bash -c 'until curl -sf http://localhost:8082/health/ready; do sleep 5; done'
+            if ! timeout 90 bash -c 'until curl -sf http://localhost:8082/health/ready; do sleep 5; done'; then
+              echo "--- LOGS DO CONTAINER (últimas 50 linhas) ---"
+              docker logs --tail 50 gdac-core-prod-core-api-1 2>&1 || true
+              echo "--- HEALTH CHECK RESPONSE ---"
+              curl -s http://localhost:8082/health/ready 2>&1 || true
+              exit 1
+            fi
             echo "Deploy produção Core concluído."
