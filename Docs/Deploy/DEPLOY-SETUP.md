@@ -72,8 +72,8 @@ VPS KingHost (Ubuntu 24.04)
 |----------|------|-------|
 | `auth.gdac.com.br` | A | `<IP do VPS>` |
 | `auth-stg.gdac.com.br` | A | `<IP do VPS>` |
-| `core.gdac.com.br` | A | `<IP do VPS>` |
-| `core-stg.gdac.com.br` | A | `<IP do VPS>` |
+| `core-api.gdac.com.br` | A | `<IP do VPS>` |
+| `core-api-stg.gdac.com.br` | A | `<IP do VPS>` |
 
 ---
 
@@ -151,8 +151,8 @@ Se você já tem um certificado SAN para `auth.gdac.com.br`, expanda-o adicionan
 certbot --nginx \
   -d auth.gdac.com.br \
   -d auth-stg.gdac.com.br \
-  -d core.gdac.com.br \
-  -d core-stg.gdac.com.br
+  -d core-api.gdac.com.br \
+  -d core-api-stg.gdac.com.br
 ```
 
 > O certbot atualiza o certificado existente e faz reload do nginx automaticamente.
@@ -347,8 +347,8 @@ develop ────────────────────────
 | Branch | Trigger deploy | Auth | Core |
 |--------|---------------|------|------|
 | `develop` | — (nenhum) | – | – |
-| `staging` | push → CI success | auth-stg.gdac.com.br | core-stg.gdac.com.br |
-| `main` | push → CI success | auth.gdac.com.br | core.gdac.com.br |
+| `staging` | push → CI success | auth-stg.gdac.com.br | core-api-stg.gdac.com.br |
+| `main` | push → CI success | auth.gdac.com.br | core-api.gdac.com.br |
 
 **Deploy manual (re-deploy sem novo commit):**
 
@@ -378,8 +378,8 @@ git push origin main
 # 3. Verificar saúde de todos os serviços
 curl https://auth.gdac.com.br/health/ready
 curl https://auth-stg.gdac.com.br/health/ready
-curl https://core.gdac.com.br/health/ready
-curl https://core-stg.gdac.com.br/health/ready
+curl https://core-api.gdac.com.br/health/ready
+curl https://core-api-stg.gdac.com.br/health/ready
 ```
 
 ---
@@ -447,7 +447,7 @@ A senha SMTP (`EMAIL_PASSWORD`) vem do `.env`. Para desenvolvimento local, use M
 
 | | Local (dev) | Staging | Produção |
 |---|---|---|---|
-| URL | `http://localhost:5269` | `https://core-stg.gdac.com.br` | `https://core.gdac.com.br` |
+| URL | `http://localhost:5269` | `https://core-api-stg.gdac.com.br` | `https://core-api.gdac.com.br` |
 | Branch | `develop` | `staging` | `main` |
 | Porta interna | – | `8083` | `8082` |
 | Banco | local (XAMPP) | `gdac01` | `gdac02` |

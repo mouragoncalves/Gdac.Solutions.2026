@@ -666,8 +666,8 @@ Internet
 nginx (host, porta 80/443)
     ├─ auth.gdac.com.br     → 127.0.0.1:8080
     ├─ auth-stg.gdac.com.br → 127.0.0.1:8081
-    ├─ core.gdac.com.br     → 127.0.0.1:8082
-    └─ core-stg.gdac.com.br → 127.0.0.1:8083
+    ├─ core-api.gdac.com.br     → 127.0.0.1:8082
+    └─ core-api-stg.gdac.com.br → 127.0.0.1:8083
 ```
 
 Cada serviço ouve em `127.0.0.1:<porta>` (não exposto para a internet diretamente). O nginx faz TLS termination e proxy reverso.
@@ -677,7 +677,7 @@ Cada serviço ouve em `127.0.0.1:<porta>` (não exposto para a internet diretame
 ```nginx
 server {
     listen 443 ssl http2;
-    server_name core.gdac.com.br;
+    server_name core-api.gdac.com.br;
 
     ssl_certificate     /etc/letsencrypt/live/gdac.com.br/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/gdac.com.br/privkey.pem;
@@ -697,8 +697,8 @@ O certificado é SAN (Subject Alternative Name) — um único cert para todos os
 certbot --nginx \
   -d auth.gdac.com.br \
   -d auth-stg.gdac.com.br \
-  -d core.gdac.com.br \
-  -d core-stg.gdac.com.br
+  -d core-api.gdac.com.br \
+  -d core-api-stg.gdac.com.br
 ```
 
 ---
