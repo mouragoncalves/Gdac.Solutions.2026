@@ -1,13 +1,17 @@
 <Solution>
-  <Folder Name="/Src/">
-    <Project Path="Src/Gdac.Auth.Api/Gdac.Auth.Api.csproj" />
-    <Project Path="Src/Gdac.Auth.Application/Gdac.Auth.Application.csproj" />
-    <Project Path="Src/Gdac.Auth.Domain/Gdac.Auth.Domain.csproj" />
-    <Project Path="Src/Gdac.Auth.Infrastructure/Gdac.Auth.Infrastructure.csproj" />
-    <Project Path="Src/Gdac.Auth.Shared/Gdac.Auth.Shared.csproj" />
+  <Folder Name="/Src/Auth/">
+    <Project Path="Src/Auth/Gdac.Auth.Api/Gdac.Auth.Api.csproj" />
+    <Project Path="Src/Auth/Gdac.Auth.Application/Gdac.Auth.Application.csproj" />
+    <Project Path="Src/Auth/Gdac.Auth.Domain/Gdac.Auth.Domain.csproj" />
+    <Project Path="Src/Auth/Gdac.Auth.Infrastructure/Gdac.Auth.Infrastructure.csproj" />
+    <Project Path="Src/Auth/Gdac.Auth.Shared/Gdac.Auth.Shared.csproj" />
   </Folder>
-  <Folder Name="/Tests/">
-    <Project Path="Tests/Gdac.Auth.IntegrationTests/Gdac.Auth.IntegrationTests.csproj" />
-    <Project Path="Tests/Gdac.Auth.UnitTests/Gdac.Auth.UnitTests.csproj" />
+  <Folder Name="/Src/Core/">
+  </Folder>
+  <Folder Name="/Tests/Auth/">
+    <Project Path="Tests/Auth/Gdac.Auth.IntegrationTests/Gdac.Auth.IntegrationTests.csproj" />
+    <Project Path="Tests/Auth/Gdac.Auth.UnitTests/Gdac.Auth.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/Tests/Core/">
   </Folder>
 </Solution>

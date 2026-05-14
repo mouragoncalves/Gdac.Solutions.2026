@@ -1,4 +1,4 @@
-name: CI
+name: CI Auth
 
 on:
   push:
@@ -61,7 +61,7 @@ jobs:
         run: dotnet build --no-restore -c Release
 
       - name: Unit Tests
-        run: dotnet test Tests/Gdac.Auth.UnitTests --no-build -c Release --logger "trx;LogFileName=unit-results.trx"
+        run: dotnet test Tests/Auth/Gdac.Auth.UnitTests --no-build -c Release --logger "trx;LogFileName=unit-results.trx"
 
       - name: Integration Tests
         env:
@@ -70,13 +70,13 @@ jobs:
           Jwt__PrivateKey: ${{ secrets.CI_JWT_PRIVATE_KEY }}
           Jwt__PublicKey: ${{ secrets.CI_JWT_PUBLIC_KEY }}
           Jwt__Issuer: "https://auth.gdac.com.br"
-        run: dotnet test Tests/Gdac.Auth.IntegrationTests --no-build -c Release --logger "trx;LogFileName=integration-results.trx"
+        run: dotnet test Tests/Auth/Gdac.Auth.IntegrationTests --no-build -c Release --logger "trx;LogFileName=integration-results.trx"
 
       - name: Publish Test Results
         uses: dorny/test-reporter@v1
         if: always()
         with:
-          name: Test Results
+          name: Auth Test Results
           path: '**/TestResults/*.trx'
           reporter: dotnet-trx
 
@@ -115,6 +115,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: Src/Gdac.Auth.Api/Dockerfile
+          file: Src/Auth/Gdac.Auth.Api/Dockerfile
           push: true
           tags: ${{ steps.tags.outputs.value }}

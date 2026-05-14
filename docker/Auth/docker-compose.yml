@@ -13,8 +13,8 @@ services:
 
   auth-api:
     build:
-      context: ..
-      dockerfile: Src/Gdac.Auth.Api/Dockerfile
+      context: ../..
+      dockerfile: Src/Auth/Gdac.Auth.Api/Dockerfile
     restart: unless-stopped
     depends_on:
       auth-redis:

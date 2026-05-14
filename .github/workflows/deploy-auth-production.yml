@@ -1,8 +1,8 @@
-name: Deploy Production
+name: Deploy Auth Production
 
 on:
   workflow_run:
-    workflows: [CI]
+    workflows: [CI Auth]
     types: [completed]
     branches: [main]
   workflow_dispatch:
@@ -58,8 +58,8 @@ jobs:
             echo "Subindo serviços..."
             IMAGE_TAG=${{ steps.tag.outputs.value }} docker compose \
               --env-file .env \
-              -f docker/docker-compose.yml \
-              -f docker/docker-compose.prod.yml \
+              -f docker/Auth/docker-compose.yml \
+              -f docker/Auth/docker-compose.prod.yml \
               up -d --no-build --remove-orphans
 
             echo "Aguardando health check..."

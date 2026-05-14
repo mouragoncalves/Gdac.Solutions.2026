@@ -1,8 +1,8 @@
-name: Deploy Staging
+name: Deploy Auth Staging
 
 on:
   workflow_run:
-    workflows: [CI]
+    workflows: [CI Auth]
     types: [completed]
     branches: [staging]
 
@@ -34,8 +34,8 @@ jobs:
             echo "Subindo serviços..."
             IMAGE_TAG=${{ github.event.workflow_run.head_sha }} docker compose \
               --env-file .env \
-              -f docker/docker-compose.yml \
-              -f docker/docker-compose.staging.yml \
+              -f docker/Auth/docker-compose.yml \
+              -f docker/Auth/docker-compose.staging.yml \
               up -d --no-build --remove-orphans
 
             echo "Aguardando health check..."
