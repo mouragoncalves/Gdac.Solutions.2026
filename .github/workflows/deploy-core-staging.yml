@@ -18,14 +18,26 @@ jobs:
         uses: appleboy/ssh-action@v1
         env:
           DB_STG_PASSWORD: ${{ secrets.DB_STG_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
-          envs: DB_STG_PASSWORD
+          envs: DB_STG_PASSWORD,GH_TOKEN,GH_REPO
           script: |
             set -e
-            cd /opt/gdac/core-stg
+            REPO_DIR=/opt/gdac/core-stg
+
+            if [ ! -d "$REPO_DIR/.git" ]; then
+              echo "Primeira execução: clonando repositório..."
+              mkdir -p "$REPO_DIR"
+              git clone "https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git" "$REPO_DIR"
+              cd "$REPO_DIR"
+              git checkout staging
+            fi
+
+            cd "$REPO_DIR"
             git pull origin staging
 
             echo "Atualizando imagem..."
