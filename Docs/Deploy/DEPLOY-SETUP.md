@@ -1,6 +1,6 @@
-# Guia de Infraestrutura e Deploy — GDAC Auth
+# Guia de Infraestrutura e Deploy — GDAC Platform
 
-Documenta toda a configuração necessária para reproduzir o ambiente de produção e staging do serviço `Gdac.Auth.Api` do zero.
+Documenta toda a configuração necessária para reproduzir do zero os ambientes de produção e staging dos serviços `Gdac.Auth.Api` e `Gdac.Core.Api`.
 
 ---
 
@@ -25,23 +25,33 @@ Documenta toda a configuração necessária para reproduzir o ambiente de produ�
 ```
 GitHub push
     └─> CI (build + test + docker push → ghcr.io)
-            ├─> branch main    → Deploy Production (auth.gdac.com.br)
-            └─> branch staging → Deploy Staging    (auth-stg.gdac.com.br)
+            ├─> branch main    → Deploy Production
+            └─> branch staging → Deploy Staging
 
 VPS KingHost (Ubuntu 24.04)
-    ├─ nginx (host) — SSL/TLS Let's Encrypt
-    ├─ /opt/gdac/auth/       → prod  (porta interna 8080)
-    └─ /opt/gdac/auth-stg/   → stg   (porta interna 8081)
+    ├─ nginx (host) — SSL/TLS Let's Encrypt (certificado SAN)
+    │
+    ├─ /opt/gdac/auth/        → Auth prod  (porta interna 8080)
+    ├─ /opt/gdac/auth-stg/    → Auth stg   (porta interna 8081)
+    ├─ /opt/gdac/core/        → Core prod  (porta interna 8082)
+    └─ /opt/gdac/core-stg/    → Core stg   (porta interna 8083)
 ```
+
+**Serviços:**
+
+| Serviço | Responsabilidade | Imagem Docker |
+|---------|-----------------|---------------|
+| `Gdac.Auth.Api` | Autenticação: registro, login, tokens JWT RS256 | `ghcr.io/<owner>/gdac-auth` |
+| `Gdac.Core.Api` | Perfis de usuário e diretório de empresas | `ghcr.io/<owner>/gdac-core` |
 
 **Stack:**
 - Aplicação: .NET 10 / ASP.NET Core
 - Banco: MariaDB 11.4 externo em `mysql.gdac.com.br`
-- Cache: Redis 7.4-alpine (container Docker)
-- Auth JWT: RS256, chaves RSA 4096 bits
+- Cache: Redis 7.4-alpine (Auth apenas)
+- JWT: RS256, chaves RSA 4096 bits — Auth emite, Core valida
 - Container registry: GitHub Container Registry (`ghcr.io`)
 - Proxy reverso: nginx no host
-- SSL: Let's Encrypt (certbot), certificado SAN para ambos os domínios
+- SSL: Let's Encrypt (certbot), certificado SAN para todos os domínios
 
 ---
 
@@ -50,7 +60,7 @@ VPS KingHost (Ubuntu 24.04)
 ### Local
 - Git, GitHub CLI (`gh`)
 - OpenSSL
-- Python 3 (para gerar o `.env` com chaves JWT formatadas)
+- Python 3 (para gerar os `.env` com chaves JWT formatadas)
 - Acesso SSH ao VPS
 
 ### VPS
@@ -62,26 +72,33 @@ VPS KingHost (Ubuntu 24.04)
 |----------|------|-------|
 | `auth.gdac.com.br` | A | `<IP do VPS>` |
 | `auth-stg.gdac.com.br` | A | `<IP do VPS>` |
+| `core.gdac.com.br` | A | `<IP do VPS>` |
+| `core-stg.gdac.com.br` | A | `<IP do VPS>` |
 
 ---
 
 ## 3. Chaves RSA JWT
 
-As chaves são geradas **uma única vez** e reutilizadas em todos os ambientes (cada ambiente tem o seu par).
+As chaves são geradas **uma vez por par de ambientes** (prod e stg).  
+O Auth usa o par completo (privada + pública). O Core usa **apenas a chave pública**.
 
 ```bash
-# Gerar par de chaves (4096 bits)
-openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out jwt_private.pem
-openssl rsa -pubout -in jwt_private.pem -out jwt_public.pem
+# Produção
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out jwt_prod_private.pem
+openssl rsa -pubout -in jwt_prod_private.pem -out jwt_prod_public.pem
 
-# Visualizar em linha única (para colar no .env ou secrets)
-awk 'NF {printf "%s\\n", $0}' jwt_private.pem
-awk 'NF {printf "%s\\n", $0}' jwt_public.pem
+# Staging
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out jwt_stg_private.pem
+openssl rsa -pubout -in jwt_stg_private.pem -out jwt_stg_public.pem
+
+# Converter para linha única (para colar no .env ou GitHub secrets)
+awk 'NF {printf "%s\\n", $0}' jwt_prod_private.pem
+awk 'NF {printf "%s\\n", $0}' jwt_prod_public.pem
 ```
 
-> **Importante:** o `.env` no servidor e os secrets do GitHub devem conter as chaves com `\n` **literal** (não quebras de linha reais). O `RsaKeyProvider` converte `\n` → newline em tempo de execução.
+> **Importante:** os arquivos `.env` e secrets do GitHub devem conter as chaves com `\n` **literal** (não quebras de linha reais). O código converte `\n` → newline em tempo de execução.
 
-Guarde os arquivos `.pem` fora do repositório (ex.: gerenciador de senhas ou vault).
+Guarde os arquivos `.pem` fora do repositório (gerenciador de senhas ou vault).
 
 ---
 
@@ -97,23 +114,53 @@ ssh -i ~/.ssh/gdac_vps_key root@<IP_DO_VPS>
 
 ```bash
 # No VPS, como root
-curl -fsSL https://raw.githubusercontent.com/mouragoncalves/Gdac.Solutions.2026/main/Docs/Deploy/setup-vps.sh \
+curl -fsSL https://raw.githubusercontent.com/<owner>/Gdac.Solutions.2026/main/Docs/Deploy/setup-vps.sh \
   | bash -s auth.gdac.com.br auth-stg.gdac.com.br suporte@gdac.com.br
 ```
 
-O script realiza:
-1. Atualiza pacotes do sistema
-2. Instala Docker, nginx, certbot, ufw
-3. Habilita firewall (SSH + HTTP/HTTPS)
-4. Cria `/opt/gdac/auth` (prod) e `/opt/gdac/auth-stg` (staging)
-5. Clona o repositório em ambos os diretórios
-6. Configura e valida o nginx
-7. Emite certificado Let's Encrypt (SAN: ambos os domínios)
+O script instala Docker, nginx, certbot, UFW e cria `/opt/gdac/auth` e `/opt/gdac/auth-stg`.
 
-### 4.3 Chave SSH para deploy automático
+### 4.3 Criar diretórios para o Core
 
 ```bash
-# No VPS
+# No VPS, como root
+mkdir -p /opt/gdac/core /opt/gdac/core-stg
+
+git clone https://github.com/<owner>/Gdac.Solutions.2026.git /opt/gdac/core
+git clone https://github.com/<owner>/Gdac.Solutions.2026.git /opt/gdac/core-stg
+
+# core-stg usa branch staging
+cd /opt/gdac/core-stg && git checkout staging
+```
+
+### 4.4 Configurar nginx para Core
+
+```bash
+# Copiar configurações
+cp /opt/gdac/core/docker/Core/nginx/conf.d/production.conf /etc/nginx/conf.d/core-production.conf
+cp /opt/gdac/core/docker/Core/nginx/conf.d/staging.conf    /etc/nginx/conf.d/core-staging.conf
+
+nginx -t && systemctl reload nginx
+```
+
+### 4.5 Expandir o certificado SSL
+
+Se você já tem um certificado SAN para `auth.gdac.com.br`, expanda-o adicionando os novos domínios:
+
+```bash
+certbot --nginx \
+  -d auth.gdac.com.br \
+  -d auth-stg.gdac.com.br \
+  -d core.gdac.com.br \
+  -d core-stg.gdac.com.br
+```
+
+> O certbot atualiza o certificado existente e faz reload do nginx automaticamente.
+
+### 4.6 Chave SSH para deploy automático
+
+```bash
+# No VPS (se ainda não criou)
 ssh-keygen -t ed25519 -C "gdac-deploy" -f /root/.ssh/gdac_deploy -N ""
 cat /root/.ssh/gdac_deploy.pub >> /root/.ssh/authorized_keys
 chmod 600 /root/.ssh/authorized_keys
@@ -126,34 +173,79 @@ cat /root/.ssh/gdac_deploy
 
 ## 5. VPS — arquivos .env
 
-Cada ambiente tem seu próprio `.env`. O Docker Compose lê o arquivo com `--env-file .env`.
+Cada serviço e ambiente tem seu próprio `.env`. O Docker Compose lê com `--env-file .env`.
 
-### Formato
+### Auth — Produção (`/opt/gdac/auth/.env`)
 
 ```dotenv
-# /opt/gdac/auth/.env  (produção)
-# /opt/gdac/auth-stg/.env  (staging)
-
 DB_PROD_PASSWORD=senha_do_banco_prod
-DB_STG_PASSWORD=senha_do_banco_stg
 REDIS_PASSWORD=senha_redis_forte
 
-# Chaves JWT em linha única com \n literal (não quebra de linha real)
-JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvgIBADA...\n-----END PRIVATE KEY-----"
-JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\nMIIBIjANBg...\n-----END PUBLIC KEY-----"
-
+JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvg...\n-----END PRIVATE KEY-----"
+JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\nMIIBIj...\n-----END PUBLIC KEY-----"
 JWT_AUDIENCE=gdac-apps
 
 EMAIL_PASSWORD=senha_smtp
 
 REGISTRY=ghcr.io
-IMAGE_NAME=mouragoncalves/gdac-auth
-IMAGE_TAG=latest        # prod usa "latest"; staging usa o SHA do commit
-
-ASPNETCORE_ENVIRONMENT=Production   # ou Staging
+IMAGE_NAME=<owner>/gdac-auth
+IMAGE_TAG=latest
+ASPNETCORE_ENVIRONMENT=Production
 ```
 
-### Script Python para gerar o .env com chaves formatadas
+### Auth — Staging (`/opt/gdac/auth-stg/.env`)
+
+```dotenv
+DB_STG_PASSWORD=senha_do_banco_stg
+REDIS_PASSWORD=senha_redis_stg
+
+JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...(chave stg)...\n-----END PRIVATE KEY-----"
+JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...(chave stg)...\n-----END PUBLIC KEY-----"
+JWT_AUDIENCE=gdac-apps
+
+EMAIL_PASSWORD=senha_smtp
+
+REGISTRY=ghcr.io
+IMAGE_NAME=<owner>/gdac-auth
+IMAGE_TAG=staging
+ASPNETCORE_ENVIRONMENT=Staging
+```
+
+### Core — Produção (`/opt/gdac/core/.env`)
+
+```dotenv
+DB_PROD_PASSWORD=senha_do_banco_prod
+
+# Mesma chave pública do Auth prod (Core só valida tokens, não emite)
+JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\nMIIBIj...\n-----END PUBLIC KEY-----"
+JWT_AUDIENCE=gdac-apps
+
+EMAIL_PASSWORD=senha_smtp
+
+REGISTRY=ghcr.io
+IMAGE_NAME=<owner>/gdac-core
+IMAGE_TAG=latest
+ASPNETCORE_ENVIRONMENT=Production
+```
+
+### Core — Staging (`/opt/gdac/core-stg/.env`)
+
+```dotenv
+DB_STG_PASSWORD=senha_do_banco_stg
+
+# Mesma chave pública do Auth stg
+JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...(chave stg)...\n-----END PUBLIC KEY-----"
+JWT_AUDIENCE=gdac-apps
+
+EMAIL_PASSWORD=senha_smtp
+
+REGISTRY=ghcr.io
+IMAGE_NAME=<owner>/gdac-core
+IMAGE_TAG=staging
+ASPNETCORE_ENVIRONMENT=Staging
+```
+
+### Script Python para gerar os .env
 
 Salve como `gerar_env.py` e execute **localmente** (nunca commite este arquivo):
 
@@ -162,20 +254,32 @@ import json, pathlib, sys
 
 secrets_file = pathlib.Path(sys.argv[1])  # JSON com as chaves
 env_path     = pathlib.Path(sys.argv[2])  # caminho de saída
+service      = sys.argv[3]                # "auth" ou "core"
 
 secrets = json.loads(secrets_file.read_text())
 
-private = secrets["Jwt:PrivateKey"].replace("\n", "\\n")
-public  = secrets["Jwt:PublicKey"].replace("\n", "\\n")
+public = secrets["Jwt:PublicKey"].replace("\n", "\\n")
 
-content = f"""DB_PROD_PASSWORD={secrets['db_password']}
+if service == "auth":
+    private = secrets["Jwt:PrivateKey"].replace("\n", "\\n")
+    content = f"""DB_PROD_PASSWORD={secrets['db_password']}
 REDIS_PASSWORD={secrets['redis_password']}
 JWT_PRIVATE_KEY="{private}"
 JWT_PUBLIC_KEY="{public}"
 JWT_AUDIENCE=gdac-apps
 EMAIL_PASSWORD={secrets['email_password']}
 REGISTRY=ghcr.io
-IMAGE_NAME=mouragoncalves/gdac-auth
+IMAGE_NAME=<owner>/gdac-auth
+IMAGE_TAG=latest
+ASPNETCORE_ENVIRONMENT=Production
+"""
+else:
+    content = f"""DB_PROD_PASSWORD={secrets['db_password']}
+JWT_PUBLIC_KEY="{public}"
+JWT_AUDIENCE=gdac-apps
+EMAIL_PASSWORD={secrets['email_password']}
+REGISTRY=ghcr.io
+IMAGE_NAME=<owner>/gdac-core
 IMAGE_TAG=latest
 ASPNETCORE_ENVIRONMENT=Production
 """
@@ -185,10 +289,14 @@ print(f"OK: {env_path}")
 ```
 
 ```bash
-python3 gerar_env.py secrets_prod.json /tmp/env_prod
-scp -i ~/.ssh/gdac_vps_key /tmp/env_prod root@<IP>:/opt/gdac/auth/.env
-ssh -i ~/.ssh/gdac_vps_key root@<IP> "chmod 600 /opt/gdac/auth/.env"
-rm /tmp/env_prod
+python3 gerar_env.py secrets_prod.json /tmp/env_auth_prod auth
+scp /tmp/env_auth_prod root@<IP>:/opt/gdac/auth/.env
+ssh root@<IP> "chmod 600 /opt/gdac/auth/.env"
+
+python3 gerar_env.py secrets_prod.json /tmp/env_core_prod core
+scp /tmp/env_core_prod root@<IP>:/opt/gdac/core/.env
+ssh root@<IP> "chmod 600 /opt/gdac/core/.env"
+rm /tmp/env_*
 ```
 
 ---
@@ -199,28 +307,28 @@ rm /tmp/env_prod
 
 Acesse **Settings → Secrets and variables → Actions** no repositório.
 
-| Secret | Onde usar | Valor |
-|--------|-----------|-------|
-| `PRODUCTION_HOST` | deploy-production.yml | IP do VPS |
-| `PRODUCTION_USER` | deploy-production.yml | `root` |
-| `PRODUCTION_SSH_KEY` | deploy-production.yml | Conteúdo de `/root/.ssh/gdac_deploy` |
-| `DB_PROD_PASSWORD` | deploy-production.yml | Senha do banco `gdac02` |
-| `STAGING_HOST` | deploy-staging.yml | IP do VPS (mesmo servidor) |
-| `STAGING_USER` | deploy-staging.yml | `root` |
-| `STAGING_SSH_KEY` | deploy-staging.yml | Mesma chave SSH (ou outra separada) |
-| `DB_STG_PASSWORD` | deploy-staging.yml | Senha do banco `gdac01` |
-| `CI_JWT_PRIVATE_KEY` | ci.yml (integration tests) | Chave privada JWT (linha única `\n`) |
-| `CI_JWT_PUBLIC_KEY` | ci.yml (integration tests) | Chave pública JWT (linha única `\n`) |
+| Secret | Workflow(s) | Valor |
+|--------|-------------|-------|
+| `PRODUCTION_HOST` | todos deploy-*-production | IP do VPS |
+| `PRODUCTION_USER` | todos deploy-*-production | `root` |
+| `PRODUCTION_SSH_KEY` | todos deploy-*-production | Conteúdo de `/root/.ssh/gdac_deploy` |
+| `DB_PROD_PASSWORD` | deploy-auth/core-production | Senha do banco `gdac02` |
+| `STAGING_HOST` | todos deploy-*-staging | IP do VPS |
+| `STAGING_USER` | todos deploy-*-staging | `root` |
+| `STAGING_SSH_KEY` | todos deploy-*-staging | Mesma chave SSH |
+| `DB_STG_PASSWORD` | deploy-auth/core-staging | Senha do banco `gdac01` |
+| `CI_JWT_PRIVATE_KEY` | ci-auth (integration tests) | Chave privada JWT para CI |
+| `CI_JWT_PUBLIC_KEY` | ci-auth, ci-core (integration tests) | Chave pública JWT para CI |
 
 ### 6.2 Environments do GitHub
 
 Crie dois environments em **Settings → Environments**:
-- `production` — pode adicionar revisores obrigatórios
+- `production` — recomendado: adicionar revisores obrigatórios
 - `staging`
 
 ### 6.3 Permissão para publicar no GHCR
 
-O CI usa `GITHUB_TOKEN` para publicar a imagem no `ghcr.io`. Certifique-se de que o repositório tem **Actions → Read and write permissions** habilitado em **Settings → Actions → General**.
+Em **Settings → Actions → General** do repositório, habilite **Read and write permissions** para que o `GITHUB_TOKEN` possa publicar imagens no `ghcr.io`.
 
 ---
 
@@ -228,27 +336,28 @@ O CI usa `GITHUB_TOKEN` para publicar a imagem no `ghcr.io`. Certifique-se de qu
 
 ```
 develop ──────────────────────────────────────────────►
-                │
-                └──► PR → staging ──► CI ──► Deploy Staging
-                                │
-                                └──► PR → main ──► CI ──► Deploy Production
+          │
+          └──► PR → staging ──► CI ──► Deploy Auth Staging
+          │                       └──► Deploy Core Staging
+          │
+          └──► PR → main    ──► CI ──► Deploy Auth Production
+                                  └──► Deploy Core Production
 ```
 
-| Branch | Ambiente | Deploy | Trigger |
-|--------|----------|--------|---------|
-| `develop` | (local/dev) | nenhum | – |
-| `staging` | auth-stg.gdac.com.br | Automático | push → CI success |
-| `main` | auth.gdac.com.br | Automático | push → CI success |
+| Branch | Trigger deploy | Auth | Core |
+|--------|---------------|------|------|
+| `develop` | — (nenhum) | – | – |
+| `staging` | push → CI success | auth-stg.gdac.com.br | core-stg.gdac.com.br |
+| `main` | push → CI success | auth.gdac.com.br | core.gdac.com.br |
 
-**Deploy manual de produção** (útil para re-deploy sem novo commit):
+**Deploy manual (re-deploy sem novo commit):**
 
 ```bash
-gh workflow run deploy-production.yml \
-  --repo mouragoncalves/Gdac.Solutions.2026 \
-  --field image_tag=latest
+gh workflow run deploy-auth-production.yml --field image_tag=latest
+gh workflow run deploy-core-production.yml --field image_tag=latest
 ```
 
-**Sincronizar staging/develop com main:**
+**Sincronizar staging e develop com main:**
 
 ```bash
 git push origin main:staging main:develop
@@ -258,57 +367,48 @@ git push origin main:staging main:develop
 
 ## 8. Primeiro deploy manual
 
-Após configurar o VPS e os secrets, faça o primeiro deploy pela linha de comando:
+Após configurar VPS e secrets:
 
 ```bash
-# 1. Garantir que a imagem está publicada (rodar CI)
+# 1. Publicar imagens (disparar CI)
 git push origin main
 
-# 2. Aguardar CI concluir (acompanhe em https://github.com/mouragoncalves/Gdac.Solutions.2026/actions)
+# 2. Aguardar CI (GitHub Actions)
 
-# 3. O deploy-production é disparado automaticamente após o CI.
-#    Para forçar manualmente:
-gh workflow run deploy-production.yml \
-  --repo mouragoncalves/Gdac.Solutions.2026 \
-  --field image_tag=latest
-
-# 4. Verificar saúde
+# 3. Verificar saúde de todos os serviços
 curl https://auth.gdac.com.br/health/ready
 curl https://auth-stg.gdac.com.br/health/ready
+curl https://core.gdac.com.br/health/ready
+curl https://core-stg.gdac.com.br/health/ready
 ```
 
 ---
 
 ## 9. Banco de dados
 
-Banco MariaDB 11.4 externo em `mysql.gdac.com.br` (KingHost).
+MariaDB 11.4 externo em `mysql.gdac.com.br` (KingHost).
 
-| Ambiente | Banco | Usuário |
-|----------|-------|---------|
-| Produção | `gdac02` | `gdac02` |
-| Staging  | `gdac01` | `gdac01` |
+| Ambiente | Banco | Usuário | Serviços que usam |
+|----------|-------|---------|-------------------|
+| Produção | `gdac02` | `gdac02` | Auth + Core (tabelas `core_*`) |
+| Staging  | `gdac01` | `gdac01` | Auth + Core (tabelas `core_*`) |
 
-### Migrations
+### Tabelas por serviço
 
-As migrations são aplicadas automaticamente na inicialização da API via `db.Database.Migrate()` em `Program.cs`. Não há step de migration nos workflows de deploy.
+| Serviço | Tabelas |
+|---------|---------|
+| Auth | `users`, `refresh_tokens` |
+| Core | `core_user_profiles`, `core_companies`, `core_user_company_links` |
 
-### Backup automático (produção)
+Migrations são aplicadas automaticamente na inicialização (`db.Database.Migrate()`).
 
-O workflow de deploy de produção executa um backup antes de atualizar a imagem:
+### Backup antes do deploy (produção Auth)
 
-```bash
-docker run --rm mariadb:11.4 \
-  mariadb-dump -h mysql.gdac.com.br -u gdac02 -p"${DB_PROD_PASSWORD}" gdac02 \
-  > /opt/gdac/auth/backups/pre-deploy-$(date +%Y%m%d-%H%M%S).sql
-```
-
-> Para que o backup funcione, o usuário `gdac02` precisa de permissão `SELECT` concedida para o IP do VPS no painel KingHost → MySQL → Gerenciar usuários.
+O workflow `deploy-auth-production.yml` executa backup automático via `mariadb-dump` antes de subir a nova imagem. Para o Core, adicione o mesmo padrão conforme necessário.
 
 ---
 
 ## 10. E-mail (Serilog + SMTP KingHost)
-
-Alertas de erro (`LogEventLevel.Error+`) são enviados por e-mail via Serilog.
 
 | Configuração | Valor |
 |-------------|-------|
@@ -318,46 +418,75 @@ Alertas de erro (`LogEventLevel.Error+`) são enviados por e-mail via Serilog.
 | Usuário | `admin.host@gdac.com.br` |
 | Destinatário | `desenvolvimento@gdac.com.br` |
 
-O subject do e-mail identifica o ambiente automaticamente:
-- Produção: `[URGENTE] [Production] [GDAC Auth] Erro crítico`
-- Outros:   `[Staging] [GDAC Auth] Erro crítico`
+Subject automático por serviço e ambiente:
 
-A senha SMTP (`EMAIL_PASSWORD`) é lida do `.env` / variável de ambiente.
+| Serviço | Produção | Outros ambientes |
+|---------|----------|-----------------|
+| Auth | `[URGENTE] [Production] [GDAC Auth] Erro crítico` | `[Staging] [GDAC Auth] Erro crítico` |
+| Core | `[URGENTE] [Production] [GDAC Core] Erro crítico` | `[Staging] [GDAC Core] Erro crítico` |
 
-Para testar localmente, use o Mailpit (configurado em `appsettings.Development.json` com `SslMode: None`).
+A senha SMTP (`EMAIL_PASSWORD`) vem do `.env`. Para desenvolvimento local, use Mailpit (porta 1025, sem TLS).
 
 ---
 
 ## 11. Referência rápida de ambientes
+
+### Gdac.Auth.Api
 
 | | Local (dev) | Staging | Produção |
 |---|---|---|---|
 | URL | `http://localhost:5000` | `https://auth-stg.gdac.com.br` | `https://auth.gdac.com.br` |
 | Branch | `develop` | `staging` | `main` |
 | Porta interna | – | `8081` | `8080` |
-| Banco | local / Docker | `gdac01` | `gdac02` |
+| Banco | local (XAMPP) | `gdac01` | `gdac02` |
+| Redis | `localhost:6379` | container `auth-redis` | container `auth-redis` |
 | ASPNETCORE_ENVIRONMENT | `Development` | `Staging` | `Production` |
-| Swagger | Habilitado | Habilitado | Desabilitado |
-| E-mail | Mailpit | KingHost SMTP | KingHost SMTP |
+| Swagger | habilitado | habilitado | desabilitado |
+
+### Gdac.Core.Api
+
+| | Local (dev) | Staging | Produção |
+|---|---|---|---|
+| URL | `http://localhost:5269` | `https://core-stg.gdac.com.br` | `https://core.gdac.com.br` |
+| Branch | `develop` | `staging` | `main` |
+| Porta interna | – | `8083` | `8082` |
+| Banco | local (XAMPP) | `gdac01` | `gdac02` |
+| ASPNETCORE_ENVIRONMENT | `Development` | `Staging` | `Production` |
+| Swagger | habilitado | habilitado | desabilitado |
+| JWT | valida com chave pública do Auth stg | valida com chave pública do Auth stg | valida com chave pública do Auth prod |
 
 ### Comandos úteis no VPS
 
 ```bash
-# Logs da API em produção
-docker logs docker-auth-api-1 -f
+# Logs
+docker logs gdac-auth-prod-auth-api-1 -f
+docker logs gdac-auth-stg-auth-api-1 -f
+docker logs gdac-core-prod-core-api-1 -f
+docker logs gdac-core-stg-core-api-1 -f
 
-# Logs da API em staging
-docker logs docker-auth-stg-api-1 -f
+# Status de todos os containers
+docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
-# Reiniciar serviço de produção
+# Reiniciar serviço de produção (Auth)
 cd /opt/gdac/auth
-IMAGE_TAG=latest docker compose --env-file .env \
-  -f docker/docker-compose.yml -f docker/docker-compose.prod.yml \
+IMAGE_TAG=latest docker compose -p gdac-auth-prod --env-file .env \
+  -f docker/Auth/docker-compose.yml -f docker/Auth/docker-compose.prod.yml \
   restart auth-api
 
-# Verificar containers rodando
-docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+# Reiniciar serviço de produção (Core)
+cd /opt/gdac/core
+IMAGE_TAG=latest docker compose -p gdac-core-prod --env-file .env \
+  -f docker/Core/docker-compose.yml -f docker/Core/docker-compose.prod.yml \
+  restart core-api
 
 # Renovação manual de certificado SSL
 certbot renew --dry-run
 ```
+
+### Portas por serviço
+
+| Serviço | Dev | Staging | Produção |
+|---------|-----|---------|---------|
+| Auth | – | 8081 | 8080 |
+| Core | – | 8083 | 8082 |
+| Auth Redis | 6379 | interno | interno |

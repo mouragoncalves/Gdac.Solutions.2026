@@ -1,8 +1,8 @@
-name: Deploy Auth Staging
+name: Deploy Core Staging
 
 on:
   workflow_run:
-    workflows: [CI Auth]
+    workflows: [CI Core]
     types: [completed]
     branches: [staging]
 
@@ -17,21 +17,19 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         env:
-          DB_STG_PASSWORD: ${{ secrets.AUTH_DB_STG_PASSWORD }}
-          JWT_PRIVATE_KEY: ${{ secrets.AUTH_JWT_PRIVATE_KEY }}
+          DB_STG_PASSWORD: ${{ secrets.CORE_DB_STG_PASSWORD }}
           JWT_PUBLIC_KEY: ${{ secrets.AUTH_JWT_PUBLIC_KEY }}
-          REDIS_PASSWORD: ${{ secrets.AUTH_REDIS_STG_PASSWORD }}
-          EMAIL_PASSWORD: ${{ secrets.AUTH_EMAIL_PASSWORD }}
+          EMAIL_PASSWORD: ${{ secrets.CORE_EMAIL_PASSWORD }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
-          envs: DB_STG_PASSWORD,JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,REDIS_PASSWORD,EMAIL_PASSWORD,GH_TOKEN,GH_REPO
+          envs: DB_STG_PASSWORD,JWT_PUBLIC_KEY,EMAIL_PASSWORD,GH_TOKEN,GH_REPO
           script: |
             set -e
-            REPO_DIR=/opt/gdac/auth-stg
+            REPO_DIR=/opt/gdac/core-stg
 
             if [ ! -d "$REPO_DIR/.git" ]; then
               echo "Primeira execução: clonando repositório..."
@@ -46,21 +44,21 @@ jobs:
 
             cat > .env << 'EOF'
             REGISTRY=ghcr.io
-            IMAGE_NAME=${{ github.repository_owner }}/gdac-auth
+            IMAGE_NAME=${{ github.repository_owner }}/gdac-core
             JWT_AUDIENCE=gdac-apps
             EOF
 
             echo "Atualizando imagem..."
-            docker pull ghcr.io/${{ github.repository_owner }}/gdac-auth:${{ github.event.workflow_run.head_sha }}
+            docker pull ghcr.io/${{ github.repository_owner }}/gdac-core:${{ github.event.workflow_run.head_sha }}
 
             echo "Subindo serviços..."
             IMAGE_TAG=${{ github.event.workflow_run.head_sha }} docker compose \
-              -p gdac-auth-stg \
+              -p gdac-core-stg \
               --env-file .env \
-              -f docker/Auth/docker-compose.yml \
-              -f docker/Auth/docker-compose.staging.yml \
+              -f docker/Core/docker-compose.yml \
+              -f docker/Core/docker-compose.staging.yml \
               up -d --no-build --remove-orphans
 
             echo "Aguardando health check..."
-            timeout 60 bash -c 'until curl -sf http://localhost:8081/health/ready; do sleep 3; done'
-            echo "Deploy staging Auth concluído."
+            timeout 60 bash -c 'until curl -sf http://localhost:8083/health/ready; do sleep 3; done'
+            echo "Deploy staging Core concluído."

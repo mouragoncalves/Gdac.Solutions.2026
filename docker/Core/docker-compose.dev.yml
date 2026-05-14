@@ -1,0 +1,14 @@
+services:
+  # Banco de dados fornecido pelo XAMPP local — não sobe container de banco em dev.
+
+  # Servidor SMTP fake — UI em http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+  core-api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: "Server=host.docker.internal;Port=3306;Database=gdac_core_dev;Uid=root;Pwd=;CharSet=utf8mb4;SslMode=None;"

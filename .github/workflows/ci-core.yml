@@ -1,4 +1,4 @@
-name: CI Auth
+name: CI Core
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 env:
   DOTNET_VERSION: '10.0.x'
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/gdac-auth
+  IMAGE_NAME: ${{ github.repository_owner }}/gdac-core
 
 jobs:
   build-and-test:
@@ -24,23 +24,13 @@ jobs:
         image: mariadb:11.4
         env:
           MARIADB_ROOT_PASSWORD: ci_root
-          MARIADB_DATABASE: gdac_auth_test
+          MARIADB_DATABASE: gdac_core_test
           MARIADB_USER: gdac
           MARIADB_PASSWORD: ci_password
         ports:
           - 3306:3306
         options: >-
           --health-cmd="healthcheck.sh --connect --innodb_initialized"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
-      redis:
-        image: redis:7.4-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd="redis-cli ping"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
@@ -61,22 +51,20 @@ jobs:
         run: dotnet build --no-restore -c Release
 
       - name: Unit Tests
-        run: dotnet test Tests/Auth/Gdac.Auth.UnitTests --no-build -c Release --logger "trx;LogFileName=unit-results.trx"
+        run: dotnet test Tests/Core/Gdac.Core.UnitTests --no-build -c Release --logger "trx;LogFileName=unit-results.trx"
 
       - name: Integration Tests
         env:
-          ConnectionStrings__Default: "Server=localhost;Port=3306;Database=gdac_auth_test;Uid=gdac;Pwd=ci_password;CharSet=utf8mb4;"
-          Redis__ConnectionString: "localhost:6379"
-          Jwt__PrivateKey: ${{ secrets.AUTH_JWT_PRIVATE_KEY }}
+          ConnectionStrings__Default: "Server=localhost;Port=3306;Database=gdac_core_test;Uid=gdac;Pwd=ci_password;CharSet=utf8mb4;"
           Jwt__PublicKey: ${{ secrets.AUTH_JWT_PUBLIC_KEY }}
           Jwt__Issuer: "https://auth.gdac.com.br"
-        run: dotnet test Tests/Auth/Gdac.Auth.IntegrationTests --no-build -c Release --logger "trx;LogFileName=integration-results.trx"
+        run: dotnet test Tests/Core/Gdac.Core.IntegrationTests --no-build -c Release --logger "trx;LogFileName=integration-results.trx"
 
       - name: Publish Test Results
         uses: dorny/test-reporter@v1
         if: always()
         with:
-          name: Auth Test Results
+          name: Core Test Results
           path: '**/TestResults/*.trx'
           reporter: dotnet-trx
 
@@ -115,6 +103,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: Src/Auth/Gdac.Auth.Api/Dockerfile
+          file: Src/Core/Gdac.Core.Api/Dockerfile
           push: true
           tags: ${{ steps.tags.outputs.value }}

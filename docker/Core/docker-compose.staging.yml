@@ -1,0 +1,10 @@
+services:
+  core-api:
+    image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG:-staging}
+    restart: on-failure:3
+    ports:
+      - "127.0.0.1:8083:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+      ConnectionStrings__Default: "Server=mysql.gdac.com.br;Port=3306;Database=gdac03;Uid=gdac03;Pwd=${DB_STG_PASSWORD};CharSet=utf8mb4;SslMode=Preferred;"
+      Jwt__Issuer: https://auth-stg.gdac.com.br

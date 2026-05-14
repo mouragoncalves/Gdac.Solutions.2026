@@ -1,8 +1,8 @@
-name: Deploy Auth Production
+name: Deploy Core Production
 
 on:
   workflow_run:
-    workflows: [CI Auth]
+    workflows: [CI Core]
     types: [completed]
     branches: [main]
   workflow_dispatch:
@@ -34,21 +34,19 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         env:
-          DB_PROD_PASSWORD: ${{ secrets.AUTH_DB_PROD_PASSWORD }}
-          JWT_PRIVATE_KEY: ${{ secrets.AUTH_JWT_PRIVATE_KEY }}
+          DB_PROD_PASSWORD: ${{ secrets.CORE_DB_PROD_PASSWORD }}
           JWT_PUBLIC_KEY: ${{ secrets.AUTH_JWT_PUBLIC_KEY }}
-          REDIS_PASSWORD: ${{ secrets.AUTH_REDIS_PROD_PASSWORD }}
-          EMAIL_PASSWORD: ${{ secrets.AUTH_EMAIL_PASSWORD }}
+          EMAIL_PASSWORD: ${{ secrets.CORE_EMAIL_PASSWORD }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         with:
           host: ${{ secrets.PRODUCTION_HOST }}
           username: ${{ secrets.PRODUCTION_USER }}
           key: ${{ secrets.PRODUCTION_SSH_KEY }}
-          envs: DB_PROD_PASSWORD,JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,REDIS_PASSWORD,EMAIL_PASSWORD,GH_TOKEN,GH_REPO
+          envs: DB_PROD_PASSWORD,JWT_PUBLIC_KEY,EMAIL_PASSWORD,GH_TOKEN,GH_REPO
           script: |
             set -e
-            REPO_DIR=/opt/gdac/auth
+            REPO_DIR=/opt/gdac/core
 
             if [ ! -d "$REPO_DIR/.git" ]; then
               echo "Primeira execução: clonando repositório..."
@@ -58,37 +56,34 @@ jobs:
 
             cd "$REPO_DIR"
             git pull origin main
-            mkdir -p backups
 
-            echo "Backup do banco antes do deploy..."
-            docker run --rm mariadb:11.4 \
-              mariadb-dump -h mysql.gdac.com.br -u gdac02 -p"${DB_PROD_PASSWORD}" gdac02 \
-              > backups/pre-deploy-$(date +%Y%m%d-%H%M%S).sql \
-              || echo "⚠️ Backup falhou — verifique permissões do gdac02 para o IP do VPS."
-
+            # Gera .env com valores estáticos não-sensíveis.
+            # JWT_PUBLIC_KEY, EMAIL_PASSWORD e DB_PROD_PASSWORD chegam via
+            # variáveis de shell (envs acima) e o docker compose os lê
+            # automaticamente do ambiente — sem precisar estar no .env.
             cat > .env << 'EOF'
             REGISTRY=ghcr.io
-            IMAGE_NAME=${{ github.repository_owner }}/gdac-auth
+            IMAGE_NAME=${{ github.repository_owner }}/gdac-core
             JWT_AUDIENCE=gdac-apps
             EOF
 
             echo "Atualizando imagem..."
-            docker pull ghcr.io/${{ github.repository_owner }}/gdac-auth:${{ steps.tag.outputs.value }}
+            docker pull ghcr.io/${{ github.repository_owner }}/gdac-core:${{ steps.tag.outputs.value }}
 
             echo "Subindo serviços..."
             IMAGE_TAG=${{ steps.tag.outputs.value }} docker compose \
-              -p gdac-auth-prod \
+              -p gdac-core-prod \
               --env-file .env \
-              -f docker/Auth/docker-compose.yml \
-              -f docker/Auth/docker-compose.prod.yml \
+              -f docker/Core/docker-compose.yml \
+              -f docker/Core/docker-compose.prod.yml \
               up -d --no-build --remove-orphans
 
             echo "Aguardando health check..."
-            if ! timeout 90 bash -c 'until curl -sf http://localhost:8080/health/ready; do sleep 5; done'; then
+            if ! timeout 90 bash -c 'until curl -sf http://localhost:8082/health/ready; do sleep 5; done'; then
               echo "--- LOGS DO CONTAINER (últimas 50 linhas) ---"
-              docker logs --tail 50 gdac-auth-prod-auth-api-1 2>&1 || true
+              docker logs --tail 50 gdac-core-prod-core-api-1 2>&1 || true
               echo "--- HEALTH CHECK RESPONSE ---"
-              curl -s http://localhost:8080/health/ready 2>&1 || true
+              curl -s http://localhost:8082/health/ready 2>&1 || true
               exit 1
             fi
-            echo "Deploy produção Auth concluído."
+            echo "Deploy produção Core concluído."
