@@ -14,7 +14,7 @@ A GDAC Platform é um ecossistema SaaS composto por:
 - **Painel GDAC** — administração interna: conteúdo, parceiros, clientes, financeiro, cobrança
 - **Painel do Parceiro** — gestão de clientes vinculados, financeiro, cobrança, contratos
 - **Painel do Cliente** — mensalidades, contratos, acesso aos produtos contratados
-- **Produtos comercializados** — ControlUP e Count+ (apps independentes com SSO via Auth)
+- **Produtos comercializados** — ControlUP e Count+ (apps independentes, fora do escopo atual)
 
 ---
 
@@ -27,7 +27,35 @@ A GDAC Platform é um ecossistema SaaS composto por:
 
 ---
 
-## 3. Arquitetura Frontend — Nx Monorepo (`Gdac.Platform`)
+## 3. Identidade Visual
+
+### Framework
+**Angular Material** (Material Design Google)
+
+### Paleta de cores
+
+| Token | Claro | Escuro | Uso |
+|-------|-------|--------|-----|
+| Primary | `#1565C0` (Blue 800) | `#42A5F5` (Blue 300) | Ações principais, navegação |
+| Accent | `#00BFA5` (Teal A700) | `#1DE9B6` (Teal A400) | Destaques, CTAs secundários |
+| Warn | `#D32F2F` | `#EF9A9A` | Erros, alertas críticos |
+| Background | `#FAFAFA` | `#121212` | Fundo da aplicação |
+| Surface | `#FFFFFF` | `#1E1E1E` | Cards, painéis |
+
+### Tipografia
+**Inter** — moderna, legível, profissional. Disponível via Google Fonts.
+
+### Logo
+- Gerenciada via upload no painel GDAC (mesmo mecanismo do parceiro)
+- Arquivo de referência: `Docs/Assets/logo/` (colocar os arquivos nessa pasta)
+- Parceiro importa sua própria logo pelo portal-partner
+
+### Tema
+Suporte nativo a tema **claro e escuro** via Angular Material theming. O usuário pode alternar pelo painel.
+
+---
+
+## 4. Arquitetura Frontend — Nx Monorepo (`Gdac.Platform`)
 
 ```
 Gdac.Platform/
@@ -43,6 +71,15 @@ Gdac.Platform/
     api/                → clients para todas as APIs backend
     shared/             → modelos, utils, validators, pipes
 ```
+
+### Apps mobile (escopo futuro — Flutter)
+
+Apps distintos, desenvolvidos separadamente após a conclusão dos portais web:
+
+| App | Plataforma | Usuário |
+|-----|-----------|---------|
+| `gdac-partner-mobile` | Flutter (iOS + Android) | Parceiros |
+| `gdac-client-mobile` | Flutter (iOS + Android) | Clientes |
 
 ### Landing do parceiro — multi-tenant por subdomínio
 
@@ -60,20 +97,20 @@ cliente acessa → parceiro-x.gdac.com.br
 
 ---
 
-## 4. Arquitetura Backend (`Gdac.Solutions.2026`)
+## 5. Arquitetura Backend (`Gdac.Solutions.2026`)
 
 | Serviço | Status | Responsabilidade |
 |---------|--------|-----------------|
 | `Gdac.Auth.Api` | ✅ Pronto | Autenticação, tokens JWT RS256 |
 | `Gdac.Core.Api` | ✅ Pronto | Perfis, empresas, parceiros, vínculos, block list |
-| `Gdac.Content.Api` | 🔲 Novo | CMS: landing GDAC + landing parceiros |
+| `Gdac.Content.Api` | 🔲 Novo | CMS: landing GDAC + landing parceiros + catálogo de produtos/serviços |
 | `Gdac.Onboarding.Api` | 🔲 Novo | Cadastro público, distribuição de leads |
 | `Gdac.Financial.Api` | 🔲 Novo | Caixa, bancos, contas a pagar, contas a receber |
 | `Gdac.Billing.Api` | 🔲 Novo | Cobranças, gateway Asaas, recorrência |
 | `Gdac.Contract.Api` | 🔲 Novo | Modelos de contrato, emissão, aceite digital |
 | `Gdac.Notification.Api` | 🔲 Novo | E-mail (SMTP KingHost) + WhatsApp (Evolution API) |
 
-### Produtos (repositórios independentes)
+### Produtos (repositórios independentes — fora do escopo atual)
 
 | Produto | Descrição |
 |---------|-----------|
@@ -84,7 +121,7 @@ Ambos usam SSO via `Gdac.Auth.Api`. O acesso é liberado conforme o contrato ati
 
 ---
 
-## 5. Status
+## 6. Status
 
 ### Parceiro
 
@@ -122,7 +159,7 @@ Todo novo cadastro inicia com status **`Prospecto`**. A ativação é manual —
 
 ---
 
-## 6. Soft Delete e Lista Negra
+## 7. Soft Delete e Lista Negra
 
 Nenhum registro é excluído definitivamente. Ao encerrar ou bloquear uma empresa:
 
@@ -148,7 +185,7 @@ public class BlockRecord
 
 ---
 
-## 7. Distribuição de Leads (cadastros sem código de parceiro)
+## 8. Distribuição de Leads (cadastros sem código de parceiro)
 
 Quando um cliente se cadastra na landing GDAC sem informar código de parceiro, o sistema aplica a regra configurada pela GDAC:
 
@@ -166,7 +203,7 @@ Quando um cliente se cadastra na landing GDAC sem informar código de parceiro, 
 
 ---
 
-## 8. Políticas de Parceria
+## 9. Políticas de Parceria
 
 | Política | Como funciona |
 |----------|--------------|
@@ -178,45 +215,95 @@ A política impacta diretamente o fluxo de cobrança e os registros financeiros 
 
 ---
 
-## 9. Precificação de Produtos
+## 10. Cadastro de Produtos e Serviços
 
-Ao cadastrar e liberar um novo produto:
+Produtos e serviços só aparecem na landing quando cadastrados e ativos no painel GDAC. O mesmo vale para integrações/apps da vitrine.
 
-| Campo | Quem define | Descrição |
-|-------|------------|-----------|
-| `PrecoRevenda` | GDAC | Valor cobrado do parceiro |
-| `PrecoSugeridoFinal` | GDAC | Sugestão de preço para o consumidor final |
-| `DescontoSugeridoSemestral` | GDAC | Desconto sugerido para contrato semestral (ex.: 5%) |
-| `DescontoSugeridoAnual` | GDAC | Desconto sugerido para contrato anual (ex.: 10%) |
-| `PrecoFinal` | Parceiro | Preço que o parceiro cobra do cliente |
-| `DescontoSemestral` | Parceiro | Desconto aplicado no semestral (pode ser maior que o sugerido) |
-| `DescontoAnual` | Parceiro | Desconto aplicado no anual (pode ser maior que o sugerido) |
+### Campos do cadastro
 
-**Regras de preço:**
-- `PrecoFinal` mínimo = `PrecoRevenda × 1,20` (margem mínima de 20%)
-- A API rejeita qualquer contratação com `PrecoFinal` abaixo do mínimo
-- O parceiro pode manter o preço sugerido ou ajustar livremente para **cima**
-- Para **baixo**, o limite é `PrecoRevenda × 1,20`
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| Nome | texto | Nome do produto/serviço |
+| Categoria | enum | Classificação |
+| Texto de apresentação | rich text | Descrição completa para landing |
+| Fotos | múltiplos arquivos | Imagens do produto/serviço |
+| Vídeos | múltiplos arquivos / URL | Demonstrações |
+| Ativo | boolean | Exibir ou não na landing |
+| Ordem | inteiro | Posição na listagem |
+| `PrecoRevenda` | decimal | Valor mensal cobrado do parceiro |
+| `PrecoSugeridoFinal` | decimal | Sugestão de preço mensal para o cliente |
+| `DescontoSugeridoSemestral` | % | Desconto sugerido no plano semestral |
+| `ValorSemestralRevenda` | calculado | `PrecoRevenda × 6 × (1 − DescontoSugeridoSemestral)` |
+| `ValorSugeridoSemestralFinal` | calculado | Valor semestral sugerido ao cliente |
+| `DescontoSugeridoAnual` | % | Desconto sugerido no plano anual |
+| `ValorAnualRevenda` | calculado | `PrecoRevenda × 12 × (1 − DescontoSugeridoAnual)` |
+| `ValorSugeridoAnualFinal` | calculado | Valor anual sugerido ao cliente |
 
-**Regras de desconto por prazo:**
-- GDAC define percentuais sugeridos de desconto para semestral e anual
-- Parceiro pode aplicar desconto **maior** (sem restrição de teto)
-- Parceiro **não pode** aplicar desconto que resulte em `PrecoFinal < PrecoRevenda × 1,20`
-- O preço final com desconto é calculado sobre o `PrecoFinal` mensal definido pelo parceiro
+### Histórico de preços
+
+Cada alteração nos valores gera um registro de histórico:
+
+```csharp
+public class ProductPriceHistory
+{
+    public Guid     Id                          { get; }
+    public Guid     ProductId                   { get; }
+    public decimal  PrecoRevenda                { get; }
+    public decimal  PrecoSugeridoFinal          { get; }
+    public decimal  DescontoSugeridoSemestral   { get; }
+    public decimal  DescontoSugeridoAnual       { get; }
+    public Guid     ChangedBy                   { get; }
+    public DateTime ChangedAt                   { get; }
+    public string?  Notes                       { get; }
+}
+```
+
+### Precificação pelo parceiro
+
+O parceiro define seus próprios valores ao disponibilizar o produto para seus clientes:
+
+| Campo | Regra |
+|-------|-------|
+| `PrecoFinal` (mensal) | Mínimo: `PrecoRevenda × 1,20` |
+| `DescontoSemestral` | Pode ser maior que o sugerido; mínimo: `PrecoFinal semestral ≥ PrecoRevenda × 1,20` |
+| `DescontoAnual` | Mesma regra do semestral |
+
+A API rejeita qualquer valor abaixo do piso de margem. O parceiro pode aumentar sem restrição de teto.
 
 ### Fluxo de cobrança na contratação
 
 ```
-Parceiro define PrecoFinal para o cliente
+Parceiro define PrecoFinal + descontos
         ↓
-Sistema gera: Contrato cliente (PrecoFinal)
+Cliente contrata (mensal / semestral / anual)
         ↓
-Sistema gera automaticamente: Registro de cobrança GDAC (PrecoRevenda)
+Sistema gera: Contrato do cliente (PrecoFinal no prazo escolhido)
+        ↓
+Sistema gera automaticamente: Registro de cobrança GDAC (PrecoRevenda no mesmo prazo)
 ```
 
 ---
 
-## 10. Contratos
+## 11. Vitrine de Integrações
+
+Integrações e apps parceiros só aparecem na landing quando cadastrados. Categorias disponíveis:
+
+| Categoria | Exemplos |
+|-----------|---------|
+| ERP / Gestão | TOTVS, SAP Business One, Bling, Omie, Linx, Senior |
+| E-commerce | Shopify, VTEX, WooCommerce, Nuvemshop |
+| Marketplace | Mercado Livre, Amazon, Shopee |
+| Fiscal / NF-e | NFe.io, Focus NF-e, SEFAZ |
+| Financeiro | Conta Azul, Sicoob, Open Banking |
+| PDV / Pagamentos | Stone, Cielo, PagSeguro, Asaas |
+| Logística | Correios, Jadlog, Total Express |
+| BI / Analytics | Power BI, Google Looker Studio |
+
+Cada integração tem: nome, logo, descrição, categoria, link externo, ordem e ativo/inativo.
+
+---
+
+## 12. Contratos
 
 - Modelos disponíveis: **Mensal**, **Semestral**, **Anual**
 - Aceite digital: semelhante aos termos de uso de um app (sem assinatura ICP-Brasil)
@@ -226,67 +313,76 @@ Sistema gera automaticamente: Registro de cobrança GDAC (PrecoRevenda)
 
 ---
 
-## 11. Notificações
+## 13. Notificações
 
-| Canal | Tecnologia | Uso |
-|-------|-----------|-----|
-| E-mail | SMTP KingHost (`smtp.kinghost.net:465`) | Boas-vindas, cobranças, alertas |
-| WhatsApp | Evolution API (self-hosted, open source) | Lembretes de pagamento, notificações importantes |
+| Canal | Tecnologia | Configuração |
+|-------|-----------|-------------|
+| E-mail | SMTP KingHost (`smtp.kinghost.net:465`) | Centralizado no `Gdac.Notification.Api` |
+| WhatsApp | Evolution API (self-hosted, open source, multi-instância) | Cada entidade configura seu próprio número |
+
+### WhatsApp por entidade
+
+- **GDAC**: configura seu número no portal-gdac
+- **Parceiro**: configura seu próprio número no portal-partner
+- Cada número é uma instância separada no Evolution API — nunca compartilhadas
+- Evolution API roda no mesmo VPS via Docker
 
 Toda comunicação é gerenciada pelo `Gdac.Notification.Api` e acionada pelos demais serviços via eventos.
 
 ---
 
-## 12. Módulos por Painel
+## 14. Módulos por Painel
 
 ### Portal GDAC (`portal-gdac`)
 
 | Módulo | Funcionalidades |
 |--------|----------------|
-| **Dashboard** | Visão geral financeira, parceiros em dia vs inadimplentes, top 10 melhores/piores parceiros por clientes e repasse, alertas críticos |
-| **Parceiros** | Cadastro, status, política de parceria, subdomínio, distribuição de leads, clientes vinculados, transferências |
-| **Clientes** | Visão de todos os clientes, status, vínculos com parceiros |
-| **Financeiro** | Caixa, bancos, contas a pagar, contas a receber (GDAC) |
-| **Cobrança** | Geração de cobranças para parceiros e clientes diretos, status de pagamentos, gateway Asaas |
+| **Dashboard** | Financeiro geral, parceiros em dia vs inadimplentes, top 10 melhores/piores por clientes e repasse, leads pendentes, alertas de bloqueio, refresh por seção + geral + auto a cada 5 min |
+| **Parceiros** | Cadastro, status, política, subdomínio, distribuição de leads, transferências, WhatsApp |
+| **Clientes** | Todos os clientes, status, vínculos, histórico |
+| **Financeiro** | Caixa, bancos, contas a pagar, contas a receber |
+| **Cobrança** | Cobranças para parceiros e clientes diretos, status, gateway Asaas |
 | **Contratos** | Modelos globais, emissão, histórico |
-| **Produtos** | Cadastro, precificação, liberação de acesso |
-| **Conteúdo** | CMS da landing GDAC |
-| **Block List** | Visualização e gestão de registros bloqueados |
-| **Leads** | Configuração do modo de distribuição, fila de leads sem parceiro |
+| **Produtos / Serviços** | Cadastro rico (fotos, vídeos, texto), precificação, histórico de preços, ativo/inativo |
+| **Integrações** | Vitrine de apps e integrações por categoria |
+| **Conteúdo** | CMS da landing GDAC (banners, carrosséis, depoimentos, parceiros em destaque) |
+| **Block List** | Visualização e reativação de registros bloqueados |
+| **Leads** | Modo de distribuição, fila de leads sem parceiro |
+| **Configurações** | Logo, WhatsApp, dados da empresa, tema |
 
 ### Portal Parceiro (`portal-partner`)
 
 | Módulo | Funcionalidades |
 |--------|----------------|
-| **Dashboard** | Clientes em dia vs inadimplentes, top clientes por valor, visão do financeiro do parceiro |
-| **Clientes** | Lista, cadastro, status, suspensão (com aprovação GDAC) |
-| **Financeiro** | Contas a receber (comissões ou faturas de revenda), extrato de repasses para GDAC |
-| **Cobrança** | Cobranças dos seus clientes (se política revenda), status de pagamentos |
-| **Contratos** | Modelos próprios, emissão para clientes |
-| **Landing** | Customização da landing page do parceiro |
+| **Dashboard** | Clientes em dia vs inadimplentes, top clientes por valor, financeiro do parceiro, refresh por seção + geral + auto a cada 5 min |
+| **Clientes** | Lista, cadastro, status, suspensão (aprovação GDAC), histórico |
+| **Financeiro** | Contas a receber, extrato de repasses para GDAC |
+| **Cobrança** | Cobranças dos clientes (política revenda), status de pagamentos |
+| **Contratos** | Modelos próprios, emissão para clientes, precificação por produto |
+| **Produtos / Serviços** | Visualização do catálogo GDAC, definição de PrecoFinal e descontos |
+| **Landing** | Customização da landing page (logo, cores, textos, produtos em destaque) |
+| **Configurações** | WhatsApp, dados do parceiro |
 
 ### Portal Cliente (`portal-client`)
 
 | Módulo | Funcionalidades |
 |--------|----------------|
-| **Dashboard** | Resumo de contratos ativos, próximos vencimentos |
-| **Financeiro** | Mensalidades, status, upload de comprovante, escolha de forma de pagamento (PIX/boleto/cartão) |
-| **Contratos** | Visualização de contratos, data de contratação, bonificações, validade |
-| **Produtos** | Acesso ao ControlUP e/ou Count+ conforme contratos ativos |
+| **Dashboard** | Contratos ativos, próximos vencimentos, status financeiro |
+| **Financeiro** | Mensalidades, status, upload de comprovante, escolha de pagamento (PIX/boleto/cartão) |
+| **Contratos** | Visualização de contratos, data, bonificações, validade |
+| **Produtos** | Acesso aos produtos contratados (ControlUP, Count+ via SSO) |
 
 ---
 
-## 13. Dashboards — Atualização de Dados
+## 15. Dashboards — Atualização de Dados
 
 - **Atualização automática:** a cada 5 minutos (polling no frontend)
 - **Atualização manual:** botão de refresh por seção e botão geral de refresh total
 - **Performance:** job noturno agrega métricas em tabela de resumo; dashboard lê o resumo, não calcula em tempo real
-- **Dados do dashboard GDAC:** financeiro geral, parceiros inadimplentes, top 10 melhores/piores revendas (por clientes e valores de repasse), alertas de bloqueio pendentes, leads sem parceiro
-- **Dados do dashboard Parceiro:** financeiro do parceiro, clientes inadimplentes, top clientes, solicitações de suspensão pendentes
 
 ---
 
-## 14. Infraestrutura e Domínios
+## 16. Infraestrutura e Domínios
 
 | App / Serviço | Domínio previsto | Tipo |
 |---------------|-----------------|------|
@@ -301,12 +397,13 @@ Toda comunicação é gerenciada pelo `Gdac.Notification.Api` e acionada pelos d
 | `Gdac.Billing.Api` | `billing-api.gdac.com.br` | .NET 10 |
 | `Gdac.Contract.Api` | `contract-api.gdac.com.br` | .NET 10 |
 | `Gdac.Notification.Api` | `notification-api.gdac.com.br` | .NET 10 |
+| `Evolution API` | `whatsapp-api.gdac.com.br` | Docker (self-hosted) |
 
-Todos rodam no mesmo VPS KingHost via Docker + nginx, seguindo o padrão já estabelecido.
+Todos rodam no mesmo VPS KingHost via Docker + nginx.
 
 ---
 
-## 15. Gateway de Pagamento
+## 17. Gateway de Pagamento
 
 **Asaas** — integrado via `Gdac.Billing.Api`
 - Boleto, PIX, cartão de crédito
@@ -315,48 +412,50 @@ Todos rodam no mesmo VPS KingHost via Docker + nginx, seguindo o padrão já est
 
 ---
 
-## 16. Ordem de Construção
+## 18. Multi-idioma
+
+- **Atual:** pt-BR apenas
+- **Futuro:** inglês (en) — arquitetura de i18n deve ser prevista desde o início no frontend (Angular i18n ou ngx-translate)
+
+---
+
+## 19. Ordem de Construção
 
 ```
 Fase 1 — Base de conteúdo
-  Gdac.Content.Api (entidades: Banner, Carousel, Product, Service, Testimonial, ShowcaseItem)
-  portal-gdac → módulo CMS
+  Gdac.Content.Api (Banner, Carousel, Product, Service, Testimonial, Integration, ShowcaseItem)
+  portal-gdac → módulo CMS + módulo Produtos/Serviços + módulo Integrações
   landing-gdac (SSR, consome Content API)
 
 Fase 2 — Parceiros e onboarding
   Gdac.Core.Api: campos de parceria (política, status, subdomínio, localização, BlockRecord)
   Gdac.Onboarding.Api (cadastro público + block list check + distribuição de leads)
   landing-partner (multi-tenant SSR)
-  portal-gdac → módulo Parceiros
-  portal-partner → módulo Clientes + Landing customizada
+  portal-gdac → módulo Parceiros + Leads + Block List
+  portal-partner → módulo Clientes + Landing customizada + Produtos
 
 Fase 3 — Financeiro e cobrança
   Gdac.Financial.Api (caixa, bancos, CP, CR)
   Gdac.Billing.Api (Asaas: boleto, PIX, cartão, recorrência)
   Gdac.Contract.Api (modelos, emissão, aceite digital)
-  portal-gdac → módulos Financeiro, Cobrança, Contratos, Dashboard
-  portal-partner → módulos Financeiro, Cobrança, Contratos, Dashboard
-  portal-client → módulos Financeiro, Contratos
+  portal-gdac → Financeiro, Cobrança, Contratos, Dashboard
+  portal-partner → Financeiro, Cobrança, Contratos, Dashboard
+  portal-client → Financeiro, Contratos
 
 Fase 4 — Notificações
-  Gdac.Notification.Api (SMTP + Evolution API WhatsApp)
-  Integração com todos os serviços que geram eventos de notificação
+  Gdac.Notification.Api (SMTP + Evolution API WhatsApp multi-instância)
+  Integração com todos os serviços que geram eventos
 
-Fase 5 — Produtos
+Fase 5 — Produtos (escopo futuro)
   ControlUP (repositório independente, SSO via Auth)
   Count+ (repositório independente, SSO via Auth)
-  portal-client → módulo Produtos
-  portal-gdac → módulo Produtos (gestão de licenças)
+  gdac-partner-mobile (Flutter)
+  gdac-client-mobile (Flutter)
 ```
 
 ---
 
-## 17. Pontos em Aberto
+## 20. Pontos em Aberto
 
-- [ ] Identidade visual: paleta, tipografia, logo para os frontends
-- [ ] Quais produtos são listados inicialmente na landing?
-- [ ] Quais integrações/apps aparecem na vitrine?
-- [ ] Multi-idioma: pt-BR apenas ou previsto pt/en/es?
-- [ ] App mobile previsto ou só web?
-- [ ] Número WhatsApp Business: já tem conta aprovada pela Meta?
 - [ ] Percentuais iniciais de desconto sugerido (semestral e anual) para os primeiros produtos
+- [ ] Multi-idioma: quando iniciar a estrutura de i18n (Fase 1 ou posterior)?
