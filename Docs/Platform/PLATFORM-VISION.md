@@ -232,10 +232,10 @@ Produtos e serviços só aparecem na landing quando cadastrados e ativos no pain
 | Ordem | inteiro | Posição na listagem |
 | `PrecoRevenda` | decimal | Valor mensal cobrado do parceiro |
 | `PrecoSugeridoFinal` | decimal | Sugestão de preço mensal para o cliente |
-| `DescontoSugeridoSemestral` | % | Desconto sugerido no plano semestral |
+| `DescontoSugeridoSemestral` | % | Desconto sugerido no plano semestral — padrão **10%** |
 | `ValorSemestralRevenda` | calculado | `PrecoRevenda × 6 × (1 − DescontoSugeridoSemestral)` |
 | `ValorSugeridoSemestralFinal` | calculado | Valor semestral sugerido ao cliente |
-| `DescontoSugeridoAnual` | % | Desconto sugerido no plano anual |
+| `DescontoSugeridoAnual` | % | Desconto sugerido no plano anual — padrão **25%** |
 | `ValorAnualRevenda` | calculado | `PrecoRevenda × 12 × (1 − DescontoSugeridoAnual)` |
 | `ValorSugeridoAnualFinal` | calculado | Valor anual sugerido ao cliente |
 
@@ -414,8 +414,9 @@ Todos rodam no mesmo VPS KingHost via Docker + nginx.
 
 ## 18. Multi-idioma
 
-- **Atual:** pt-BR apenas
-- **Futuro:** inglês (en) — arquitetura de i18n deve ser prevista desde o início no frontend (Angular i18n ou ngx-translate)
+- **Atual:** pt-BR
+- **Futuro:** inglês (en)
+- A estrutura de i18n será implementada desde a **Fase 1** usando **ngx-translate** — todos os textos já passam por chave de tradução desde o primeiro componente criado
 
 ---
 
@@ -457,5 +458,4 @@ Fase 5 — Produtos (escopo futuro)
 
 ## 20. Pontos em Aberto
 
-- [ ] Percentuais iniciais de desconto sugerido (semestral e anual) para os primeiros produtos
-- [ ] Multi-idioma: quando iniciar a estrutura de i18n (Fase 1 ou posterior)?
+Todos os pontos foram definidos. Nenhuma decisão pendente no momento.
