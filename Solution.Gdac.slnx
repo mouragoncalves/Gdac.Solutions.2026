@@ -26,4 +26,8 @@
     <Project Path="Tests/Core/Gdac.Core.IntegrationTests/Gdac.Core.IntegrationTests.csproj" />
     <Project Path="Tests/Core/Gdac.Core.UnitTests/Gdac.Core.UnitTests.csproj" />
   </Folder>
+  <Folder Name="/Tests/Onboarding/">
+    <Project Path="Tests/Onboarding/Gdac.Onboarding.IntegrationTests/Gdac.Onboarding.IntegrationTests.csproj" />
+    <Project Path="Tests/Onboarding/Gdac.Onboarding.UnitTests/Gdac.Onboarding.UnitTests.csproj" />
+  </Folder>
 </Solution>
