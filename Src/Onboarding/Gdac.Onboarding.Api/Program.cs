@@ -28,7 +28,7 @@ try
         var password = emailCfg["Password"];
         var port     = int.Parse(emailCfg["Port"] ?? "465");
 
-        if (!string.IsNullOrEmpty(host) && !string.IsNullOrEmpty(alertTo))
+        if (!string.IsNullOrEmpty(host) && !string.IsNullOrEmpty(alertTo) && !string.IsNullOrEmpty(password))
         {
             var socketOptions = emailCfg["SslMode"] switch
             {
