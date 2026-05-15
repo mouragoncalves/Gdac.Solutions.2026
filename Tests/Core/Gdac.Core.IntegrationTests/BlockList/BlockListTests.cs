@@ -6,7 +6,8 @@ using System.Net.Http.Json;
 
 namespace Gdac.Core.IntegrationTests.BlockList;
 
-public class BlockListTests(CoreWebAppFactory factory) : IClassFixture<CoreWebAppFactory>
+[Collection("Core Integration")]
+public class BlockListTests(CoreWebAppFactory factory)
 {
     private readonly Guid _userId = Guid.NewGuid();
 

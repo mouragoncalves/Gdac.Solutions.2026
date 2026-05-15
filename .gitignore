@@ -3,6 +3,19 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# macOS
+.DS_Store
+**/.DS_Store
+
+# IDE caches
+*.lscache
+
+# Claude memory (local only)
+memory/
+
+# Assets de media grandes (imagens, videos, arquivos de design)
+Docs/Assets/
+
 # User-specific files
 *.rsuser
 *.suo

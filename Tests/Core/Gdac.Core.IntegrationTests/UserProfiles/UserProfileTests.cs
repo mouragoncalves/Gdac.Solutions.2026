@@ -6,7 +6,8 @@ using System.Net.Http.Json;
 
 namespace Gdac.Core.IntegrationTests.UserProfiles;
 
-public class UserProfileTests(CoreWebAppFactory factory) : IClassFixture<CoreWebAppFactory>
+[Collection("Core Integration")]
+public class UserProfileTests(CoreWebAppFactory factory)
 {
     private readonly Guid _userId = Guid.NewGuid();
 

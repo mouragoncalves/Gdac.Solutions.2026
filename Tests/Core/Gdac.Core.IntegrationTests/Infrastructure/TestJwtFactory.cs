@@ -1,3 +1,4 @@
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
@@ -13,11 +14,16 @@ public static class TestJwtFactory
             new Claim(ClaimTypes.NameIdentifier, userId.ToString())
         };
 
+        var credentials = new SigningCredentials(
+            new RsaSecurityKey(CoreWebAppFactory.TestRsa),
+            SecurityAlgorithms.RsaSha256);
+
         var token = new JwtSecurityToken(
             issuer: "test",
             audience: "test",
             claims: claims,
-            expires: DateTime.UtcNow.AddHours(1));
+            expires: DateTime.UtcNow.AddHours(1),
+            signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

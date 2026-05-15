@@ -8,8 +8,8 @@ using System.Net.Http.Json;
 
 namespace Gdac.Onboarding.IntegrationTests.Registrations;
 
+[Collection("Onboarding Integration")]
 public class ApproveRejectRegistrationTests(OnboardingWebAppFactory factory)
-    : IClassFixture<OnboardingWebAppFactory>
 {
     private readonly HttpClient _client = factory.CreateClient();
     private readonly Guid _adminId = Guid.NewGuid();

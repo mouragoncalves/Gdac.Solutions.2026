@@ -7,8 +7,8 @@ using System.Net.Http.Json;
 
 namespace Gdac.Onboarding.IntegrationTests.Registrations;
 
+[Collection("Onboarding Integration")]
 public class SubmitRegistrationTests(OnboardingWebAppFactory factory)
-    : IClassFixture<OnboardingWebAppFactory>
 {
     private readonly HttpClient _client = factory.CreateClient();
 

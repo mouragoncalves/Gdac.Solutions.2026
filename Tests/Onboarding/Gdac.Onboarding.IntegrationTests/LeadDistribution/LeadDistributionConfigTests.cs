@@ -6,8 +6,8 @@ using System.Net.Http.Json;
 
 namespace Gdac.Onboarding.IntegrationTests.LeadDistribution;
 
+[Collection("Onboarding Integration")]
 public class LeadDistributionConfigTests(OnboardingWebAppFactory factory)
-    : IClassFixture<OnboardingWebAppFactory>
 {
     private HttpClient AuthenticatedClient()
     {

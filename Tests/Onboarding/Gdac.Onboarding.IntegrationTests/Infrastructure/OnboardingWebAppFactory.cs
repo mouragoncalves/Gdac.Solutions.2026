@@ -15,7 +15,7 @@ namespace Gdac.Onboarding.IntegrationTests.Infrastructure;
 
 public class OnboardingWebAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private static readonly RSA _testRsa = RSA.Create(2048);
+    public static readonly RSA TestRsa = RSA.Create(2048);
 
     private readonly MySqlContainer _db = new MySqlBuilder()
         .WithImage("mariadb:11.4")
@@ -37,7 +37,7 @@ public class OnboardingWebAppFactory : WebApplicationFactory<Program>, IAsyncLif
 
         builder.ConfigureAppConfiguration(cfg => cfg.AddInMemoryCollection(new Dictionary<string, string?>
         {
-            ["Jwt:PublicKey"] = _testRsa.ExportSubjectPublicKeyInfoPem(),
+            ["Jwt:PublicKey"] = TestRsa.ExportSubjectPublicKeyInfoPem(),
             ["Jwt:Issuer"] = "test",
             ["Jwt:Audience"] = "test"
         }));
@@ -62,11 +62,12 @@ public class OnboardingWebAppFactory : WebApplicationFactory<Program>, IAsyncLif
             {
                 opts.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuerSigningKey = false,
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    SignatureValidator = (token, _) =>
-                        new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(token)
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey         = new RsaSecurityKey(TestRsa),
+                    ValidateIssuer           = false,
+                    ValidateAudience         = false,
+                    ValidateLifetime         = true,
+                    ClockSkew                = TimeSpan.Zero
                 };
             });
         });
