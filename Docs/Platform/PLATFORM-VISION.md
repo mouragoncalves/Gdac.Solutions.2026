@@ -114,7 +114,11 @@ Ambos usam SSO via `Gdac.Auth.Api`. O acesso é liberado conforme o contrato ati
 |------|-----------|
 | GDAC | Qualquer transição, inclusive reativar `Bloqueado` |
 | Parceiro | Pode suspender seu cliente → vai para fila de aprovação da GDAC |
-| Sistema | `Ativo` → `Inadimplente` automaticamente após X dias de atraso |
+| Sistema | `Ativo` → `Inadimplente` automaticamente a partir do **5º dia corrido** de atraso |
+
+### Fluxo de aprovação de cadastro
+
+Todo novo cadastro inicia com status **`Prospecto`**. A ativação é manual — feita pela GDAC ou pelo parceiro responsável.
 
 ---
 
@@ -152,12 +156,13 @@ Quando um cliente se cadastra na landing GDAC sem informar código de parceiro, 
 |------|--------------|
 | `Manual` | Cadastro fica como `Prospecto` sem parceiro — GDAC atribui depois |
 | `RevendaPadrao` | Atribuído automaticamente a uma revenda configurada |
-| `Sorteio` | Sorteado entre as top 5 revendas ativas por volume de clientes |
+| `Sorteio` | Sorteado entre as top 5 revendas por volume total de repasse; empate desfeito por quantidade de clientes ativos |
 | `Proximidade` | Atribuído ao parceiro mais próximo por cidade/estado |
 
 - A GDAC pode ter clientes diretos (PartnerId nullable)
 - O modo de distribuição é configurável no painel GDAC e pode ser alterado a qualquer momento
 - Para o modo `Proximidade`, parceiros precisam ter cidade e estado cadastrados
+- Para o modo `Sorteio`, apenas parceiros com status `Ativo` participam
 
 ---
 
@@ -181,12 +186,23 @@ Ao cadastrar e liberar um novo produto:
 |-------|------------|-----------|
 | `PrecoRevenda` | GDAC | Valor cobrado do parceiro |
 | `PrecoSugeridoFinal` | GDAC | Sugestão de preço para o consumidor final |
+| `DescontoSugeridoSemestral` | GDAC | Desconto sugerido para contrato semestral (ex.: 5%) |
+| `DescontoSugeridoAnual` | GDAC | Desconto sugerido para contrato anual (ex.: 10%) |
 | `PrecoFinal` | Parceiro | Preço que o parceiro cobra do cliente |
+| `DescontoSemestral` | Parceiro | Desconto aplicado no semestral (pode ser maior que o sugerido) |
+| `DescontoAnual` | Parceiro | Desconto aplicado no anual (pode ser maior que o sugerido) |
 
-**Regras:**
+**Regras de preço:**
 - `PrecoFinal` mínimo = `PrecoRevenda × 1,20` (margem mínima de 20%)
 - A API rejeita qualquer contratação com `PrecoFinal` abaixo do mínimo
-- O parceiro pode manter o preço sugerido ou ajustar para cima
+- O parceiro pode manter o preço sugerido ou ajustar livremente para **cima**
+- Para **baixo**, o limite é `PrecoRevenda × 1,20`
+
+**Regras de desconto por prazo:**
+- GDAC define percentuais sugeridos de desconto para semestral e anual
+- Parceiro pode aplicar desconto **maior** (sem restrição de teto)
+- Parceiro **não pode** aplicar desconto que resulte em `PrecoFinal < PrecoRevenda × 1,20`
+- O preço final com desconto é calculado sobre o `PrecoFinal` mensal definido pelo parceiro
 
 ### Fluxo de cobrança na contratação
 
@@ -338,12 +354,9 @@ Fase 5 — Produtos
 ## 17. Pontos em Aberto
 
 - [ ] Identidade visual: paleta, tipografia, logo para os frontends
-- [ ] Fluxo de aprovação de cadastro: automático (`Ativo`) ou revisão (`Prospecto` → GDAC ativa)?
-- [ ] Após quantos dias de atraso o sistema muda `Ativo` → `Inadimplente`?
-- [ ] Desconto por prazo de contrato: semestral e anual têm desconto? Qual %?
 - [ ] Quais produtos são listados inicialmente na landing?
 - [ ] Quais integrações/apps aparecem na vitrine?
 - [ ] Multi-idioma: pt-BR apenas ou previsto pt/en/es?
 - [ ] App mobile previsto ou só web?
 - [ ] Número WhatsApp Business: já tem conta aprovada pela Meta?
-- [ ] Critério exato do top 5 para sorteio de leads: por clientes ativos? Por volume de repasse?
+- [ ] Percentuais iniciais de desconto sugerido (semestral e anual) para os primeiros produtos
