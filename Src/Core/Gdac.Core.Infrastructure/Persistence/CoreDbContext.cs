@@ -10,6 +10,7 @@ public class CoreDbContext(DbContextOptions<CoreDbContext> options) : DbContext(
     public DbSet<UserCompanyLink> UserCompanyLinks => Set<UserCompanyLink>();
     public DbSet<CompanyMember>   CompanyMembers   => Set<CompanyMember>();
     public DbSet<CompanyOffice>   CompanyOffices   => Set<CompanyOffice>();
+    public DbSet<BlockRecord>     BlockRecords     => Set<BlockRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

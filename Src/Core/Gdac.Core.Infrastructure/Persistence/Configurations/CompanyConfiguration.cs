@@ -24,6 +24,8 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
 
         builder.Property(c => c.Type).IsRequired().HasConversion<int>();
         builder.Property(c => c.Status).IsRequired().HasConversion<int>();
+        builder.Property(c => c.Segment).HasConversion<int?>();
+        builder.Property(c => c.SizeCategory).HasConversion<int?>();
 
         builder.Property(c => c.Email).HasMaxLength(255);
         builder.Property(c => c.Phone).HasMaxLength(20);

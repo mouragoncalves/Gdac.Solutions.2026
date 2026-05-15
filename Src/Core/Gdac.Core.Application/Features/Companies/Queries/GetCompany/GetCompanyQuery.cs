@@ -13,6 +13,8 @@ public record CompanyResult(
     string? Cnpj,
     CompanyType Type,
     CompanyStatus Status,
+    ClientSegment? Segment,
+    CompanySize? SizeCategory,
     string? Email,
     string? Phone,
     int? NatureId,

@@ -14,7 +14,8 @@ public class CreateCompanyHandler(ICompanyRepository repo, IUnitOfWork uow)
             throw new DomainException("Já existe uma empresa com este CNPJ.");
 
         var company = Company.Create(request.Name, request.Type,
-            request.TradeName, request.Cnpj, request.Email, request.Phone);
+            request.TradeName, request.Cnpj, request.Email, request.Phone,
+            request.Segment, request.SizeCategory);
 
         await repo.AddAsync(company, ct);
         await uow.CommitAsync(ct);

@@ -42,6 +42,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICompanyMemberRepository, CompanyMemberRepository>();
         services.AddScoped<ICompanyOfficeRepository, CompanyOfficeRepository>();
         services.AddScoped<IUserCompanyLinkRepository, UserCompanyLinkRepository>();
+        services.AddScoped<IBlockRecordRepository, BlockRecordRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IEmailService, EmailService>();
 

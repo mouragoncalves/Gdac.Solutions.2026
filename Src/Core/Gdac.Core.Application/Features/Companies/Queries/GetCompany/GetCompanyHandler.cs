@@ -14,7 +14,8 @@ public class GetCompanyHandler(ICompanyRepository repo)
 
         return new CompanyResult(
             c.Id, c.Name, c.TradeName, c.CnpjBase, c.Cnpj,
-            c.Type, c.Status, c.Email, c.Phone,
+            c.Type, c.Status, c.Segment, c.SizeCategory,
+            c.Email, c.Phone,
             c.NatureId, c.NatureText,
             c.SizeId, c.SizeAcronym, c.SizeText,
             c.Equity, c.Jurisdiction,

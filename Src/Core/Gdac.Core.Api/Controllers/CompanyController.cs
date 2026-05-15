@@ -36,7 +36,8 @@ public class CompanyController(IMediator mediator) : ControllerBase
     {
         var id = await mediator.Send(new CreateCompanyCommand(
             request.Name, request.Type, request.TradeName,
-            request.Cnpj, request.Email, request.Phone), ct);
+            request.Cnpj, request.Email, request.Phone,
+            request.Segment, request.SizeCategory), ct);
         return CreatedAtAction(nameof(GetById), new { id }, new { id });
     }
 
@@ -45,7 +46,8 @@ public class CompanyController(IMediator mediator) : ControllerBase
     {
         await mediator.Send(new UpdateCompanyCommand(
             id, request.Name, request.TradeName, request.Cnpj,
-            request.Type, request.Email, request.Phone), ct);
+            request.Type, request.Email, request.Phone,
+            request.Segment, request.SizeCategory), ct);
         return NoContent();
     }
 
@@ -128,8 +130,13 @@ public class CompanyController(IMediator mediator) : ControllerBase
     }
 }
 
-public record CreateCompanyRequest(string Name, CompanyType Type, string? TradeName, string? Cnpj, string? Email, string? Phone);
-public record UpdateCompanyRequest(string Name, string? TradeName, string? Cnpj, CompanyType Type, string? Email, string? Phone);
+public record CreateCompanyRequest(
+    string Name, CompanyType Type, string? TradeName, string? Cnpj,
+    string? Email, string? Phone, ClientSegment? Segment, CompanySize? SizeCategory);
+
+public record UpdateCompanyRequest(
+    string Name, string? TradeName, string? Cnpj, CompanyType Type,
+    string? Email, string? Phone, ClientSegment? Segment, CompanySize? SizeCategory);
 
 public record SyncCnpjDataRequest(
     string? CnpjBase,

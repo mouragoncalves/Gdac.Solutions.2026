@@ -16,6 +16,9 @@ public class Company
     public CompanyType Type { get; private set; }
     public CompanyStatus Status { get; private set; }
 
+    public ClientSegment? Segment { get; private set; }
+    public CompanySize? SizeCategory { get; private set; }
+
     public string? Email { get; private set; }
     public string? Phone { get; private set; }
 
@@ -52,33 +55,39 @@ public class Company
     private Company() { }
 
     public static Company Create(string name, CompanyType type, string? tradeName = null,
-        string? cnpj = null, string? email = null, string? phone = null)
+        string? cnpj = null, string? email = null, string? phone = null,
+        ClientSegment? segment = null, CompanySize? sizeCategory = null)
     {
         return new Company
         {
-            Id        = Guid.NewGuid(),
-            Name      = name.Trim(),
-            TradeName = tradeName?.Trim(),
-            Cnpj      = cnpj?.Trim(),
-            Type      = type,
-            Status    = CompanyStatus.Active,
-            Email     = email?.Trim().ToLowerInvariant(),
-            Phone     = phone?.Trim(),
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            Id           = Guid.NewGuid(),
+            Name         = name.Trim(),
+            TradeName    = tradeName?.Trim(),
+            Cnpj         = cnpj?.Trim(),
+            Type         = type,
+            Status       = CompanyStatus.Prospect,
+            Segment      = segment,
+            SizeCategory = sizeCategory,
+            Email        = email?.Trim().ToLowerInvariant(),
+            Phone        = phone?.Trim(),
+            CreatedAt    = DateTime.UtcNow,
+            UpdatedAt    = DateTime.UtcNow
         };
     }
 
     public void Update(string name, string? tradeName, string? cnpj,
-        CompanyType type, string? email, string? phone)
+        CompanyType type, string? email, string? phone,
+        ClientSegment? segment, CompanySize? sizeCategory)
     {
-        Name      = name.Trim();
-        TradeName = tradeName?.Trim();
-        Cnpj      = cnpj?.Trim();
-        Type      = type;
-        Email     = email?.Trim().ToLowerInvariant();
-        Phone     = phone?.Trim();
-        UpdatedAt = DateTime.UtcNow;
+        Name         = name.Trim();
+        TradeName    = tradeName?.Trim();
+        Cnpj         = cnpj?.Trim();
+        Type         = type;
+        Email        = email?.Trim().ToLowerInvariant();
+        Phone        = phone?.Trim();
+        Segment      = segment;
+        SizeCategory = sizeCategory;
+        UpdatedAt    = DateTime.UtcNow;
     }
 
     // Populated from CNPJ API data (Receita Federal)

@@ -13,7 +13,8 @@ public class UpdateCompanyHandler(ICompanyRepository repo, IUnitOfWork uow)
             ?? throw new NotFoundException("Empresa", request.Id);
 
         company.Update(request.Name, request.TradeName, request.Cnpj,
-            request.Type, request.Email, request.Phone);
+            request.Type, request.Email, request.Phone,
+            request.Segment, request.SizeCategory);
         repo.Update(company);
         await uow.CommitAsync(ct);
     }
