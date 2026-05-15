@@ -1,0 +1,16 @@
+services:
+  content-api:
+    image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+    restart: on-failure:3
+    ports:
+      - "127.0.0.1:8084:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: "Server=mysql.gdac.com.br;Port=3306;Database=gdac06;Uid=gdac06;Pwd=${DB_PROD_PASSWORD};CharSet=utf8mb4;SslMode=Preferred;"
+      Jwt__Issuer: https://auth.gdac.com.br
+      Email__Host: smtp.kinghost.net
+      Email__Port: "465"
+      Email__Username: atendimento@gdac.com.br
+      Email__From: atendimento@gdac.com.br
+      Email__AlertTo: desenvolvimento@gdac.com.br
+      Email__SslMode: SslOnConnect
