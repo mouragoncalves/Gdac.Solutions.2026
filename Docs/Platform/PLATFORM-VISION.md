@@ -32,6 +32,18 @@ A GDAC Platform é um ecossistema SaaS composto por:
 ### Framework
 **Angular Material** (Material Design Google)
 
+### Responsividade
+
+Todos os apps são **mobile-first** e responsivos em todos os breakpoints:
+
+| Breakpoint | Largura | Comportamento |
+|------------|---------|--------------|
+| `xs` | < 600px | Layout mobile: sidebar vira drawer, tabelas viram cards, modais viram bottom sheets |
+| `sm` | 600–959px | Tablet: 2 colunas, navbar compacta |
+| `md` | 960–1279px | Desktop pequeno: sidebar collapsível |
+| `lg` | 1280–1919px | Desktop padrão: layout completo |
+| `xl` | ≥ 1920px | Desktop grande: conteúdo centralizado com max-width |
+
 ### Paleta de cores
 
 | Token | Claro | Escuro | Uso |
