@@ -42,7 +42,7 @@ public class CompanyTests(CoreWebAppFactory factory)
         var payload = new
         {
             name = "Empresa Integração LTDA",
-            type = 0,
+            type = 1,
             tradeName = (string?)null,
             cnpj = (string?)null,
             email = (string?)null,
@@ -62,7 +62,7 @@ public class CompanyTests(CoreWebAppFactory factory)
     public async Task CreateCompany_EmptyName_Returns400()
     {
         var client = AuthenticatedClient();
-        var payload = new { name = "", type = 0 };
+        var payload = new { name = "", type = 1 };
 
         var response = await client.PostAsJsonAsync("/companies", payload);
 
@@ -73,7 +73,7 @@ public class CompanyTests(CoreWebAppFactory factory)
     public async Task UpdateCompany_ValidRequest_Returns204()
     {
         var client = AuthenticatedClient();
-        var createPayload = new { name = "Empresa Update", type = 0 };
+        var createPayload = new { name = "Empresa Update", type = 1 };
         var createResponse = await client.PostAsJsonAsync("/companies", createPayload);
         createResponse.EnsureSuccessStatusCode();
         var created = await createResponse.Content.ReadFromJsonAsync<IdResponse>();
@@ -99,7 +99,7 @@ public class CompanyTests(CoreWebAppFactory factory)
     public async Task DeactivateCompany_ValidId_Returns204()
     {
         var client = AuthenticatedClient();
-        var createPayload = new { name = "Empresa Desativar", type = 0 };
+        var createPayload = new { name = "Empresa Desativar", type = 1 };
         var createResponse = await client.PostAsJsonAsync("/companies", createPayload);
         createResponse.EnsureSuccessStatusCode();
         var created = await createResponse.Content.ReadFromJsonAsync<IdResponse>();
@@ -118,7 +118,7 @@ public class CompanyTests(CoreWebAppFactory factory)
             name = "Empresa",
             tradeName = (string?)null,
             cnpj = (string?)null,
-            type = 0,
+            type = 1,
             email = (string?)null,
             phone = (string?)null,
             segment = (int?)null,
