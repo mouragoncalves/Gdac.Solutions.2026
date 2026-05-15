@@ -42,6 +42,14 @@ jobs:
             cd "$REPO_DIR"
             git pull origin staging
 
+            # ─── Nginx (usa cert emitido pelo deploy de produção) ─────────────
+            if [ ! -f /etc/nginx/conf.d/content-staging.conf ] && \
+               [ -f /etc/letsencrypt/live/content-api.gdac.com.br/fullchain.pem ]; then
+              echo "Configurando nginx staging..."
+              cp "$REPO_DIR/docker/Content/nginx/conf.d/staging.conf" /etc/nginx/conf.d/content-staging.conf
+              nginx -t && systemctl reload nginx
+            fi
+
             cat > .env << 'EOF'
             REGISTRY=ghcr.io
             IMAGE_NAME=${{ github.repository_owner }}/gdac-content

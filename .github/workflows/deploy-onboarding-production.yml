@@ -57,6 +57,31 @@ jobs:
             cd "$REPO_DIR"
             git pull origin main
 
+            # ─── Nginx + SSL (somente na primeira execução) ───────────────────
+            if [ ! -f /etc/nginx/conf.d/onboarding-production.conf ]; then
+              echo "Configurando nginx e emitindo certificado SSL..."
+              mkdir -p /var/www/certbot
+              cat > /etc/nginx/conf.d/onboarding-temp.conf << 'NGINXEOF'
+            server {
+                listen 80;
+                server_name onboarding-api.gdac.com.br onboarding-api-stg.gdac.com.br;
+                location /.well-known/acme-challenge/ { root /var/www/certbot; }
+                location / { return 200 'ok'; add_header Content-Type text/plain; }
+            }
+            NGINXEOF
+              nginx -t && systemctl reload nginx
+              certbot certonly --webroot \
+                -w /var/www/certbot \
+                -d onboarding-api.gdac.com.br \
+                -d onboarding-api-stg.gdac.com.br \
+                --non-interactive --agree-tos \
+                --email suporte@gdac.com.br
+              rm /etc/nginx/conf.d/onboarding-temp.conf
+              cp "$REPO_DIR/docker/Onboarding/nginx/conf.d/production.conf" /etc/nginx/conf.d/onboarding-production.conf
+              cp "$REPO_DIR/docker/Onboarding/nginx/conf.d/staging.conf"    /etc/nginx/conf.d/onboarding-staging.conf
+              nginx -t && systemctl reload nginx
+            fi
+
             cat > .env << 'EOF'
             REGISTRY=ghcr.io
             IMAGE_NAME=${{ github.repository_owner }}/gdac-onboarding

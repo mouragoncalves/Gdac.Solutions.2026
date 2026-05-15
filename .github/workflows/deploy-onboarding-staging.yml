@@ -42,6 +42,14 @@ jobs:
             cd "$REPO_DIR"
             git pull origin staging
 
+            # ─── Nginx (usa cert emitido pelo deploy de produção) ─────────────
+            if [ ! -f /etc/nginx/conf.d/onboarding-staging.conf ] && \
+               [ -f /etc/letsencrypt/live/onboarding-api.gdac.com.br/fullchain.pem ]; then
+              echo "Configurando nginx staging..."
+              cp "$REPO_DIR/docker/Onboarding/nginx/conf.d/staging.conf" /etc/nginx/conf.d/onboarding-staging.conf
+              nginx -t && systemctl reload nginx
+            fi
+
             cat > .env << 'EOF'
             REGISTRY=ghcr.io
             IMAGE_NAME=${{ github.repository_owner }}/gdac-onboarding
@@ -60,5 +68,10 @@ jobs:
               up -d --no-build --remove-orphans
 
             echo "Aguardando health check..."
-            timeout 60 bash -c 'until curl -sf http://localhost:8087/health/ready; do sleep 3; done'
+            if ! timeout 60 bash -c 'until curl -sf http://localhost:8087/health/ready; do sleep 3; done'; then
+              echo "--- LOGS DO CONTAINER ---"
+              docker logs --tail 50 gdac-onboarding-stg-onboarding-api-1 2>&1 || true
+              curl -s http://localhost:8087/health/ready 2>&1 || true
+              exit 1
+            fi
             echo "Deploy staging Onboarding concluído."
