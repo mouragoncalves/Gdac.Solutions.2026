@@ -12,6 +12,12 @@
     <Project Path="Src/Core/Gdac.Core.Domain/Gdac.Core.Domain.csproj" />
     <Project Path="Src/Core/Gdac.Core.Infrastructure/Gdac.Core.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/Src/Onboarding/">
+    <Project Path="Src/Onboarding/Gdac.Onboarding.Api/Gdac.Onboarding.Api.csproj" />
+    <Project Path="Src/Onboarding/Gdac.Onboarding.Application/Gdac.Onboarding.Application.csproj" />
+    <Project Path="Src/Onboarding/Gdac.Onboarding.Domain/Gdac.Onboarding.Domain.csproj" />
+    <Project Path="Src/Onboarding/Gdac.Onboarding.Infrastructure/Gdac.Onboarding.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/Tests/Auth/">
     <Project Path="Tests/Auth/Gdac.Auth.IntegrationTests/Gdac.Auth.IntegrationTests.csproj" />
     <Project Path="Tests/Auth/Gdac.Auth.UnitTests/Gdac.Auth.UnitTests.csproj" />

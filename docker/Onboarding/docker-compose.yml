@@ -1,0 +1,18 @@
+services:
+  onboarding-api:
+    build:
+      context: ../..
+      dockerfile: Src/Onboarding/Gdac.Onboarding.Api/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      Jwt__PublicKey: ${JWT_PUBLIC_KEY}
+      Jwt__Audience: ${JWT_AUDIENCE:-gdac-apps}
+      Email__Password: ${EMAIL_PASSWORD}
+      ServiceUrls__CoreApi: ${CORE_API_URL}
+      ServiceUrls__AuthApi: ${AUTH_API_URL}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
