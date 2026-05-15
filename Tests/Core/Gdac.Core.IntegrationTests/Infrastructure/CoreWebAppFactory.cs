@@ -3,14 +3,18 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Cryptography;
 using Testcontainers.MySql;
 
 namespace Gdac.Core.IntegrationTests.Infrastructure;
 
 public class CoreWebAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
+    private static readonly RSA _testRsa = RSA.Create(2048);
+
     private readonly MySqlContainer _db = new MySqlBuilder()
         .WithImage("mariadb:11.4")
         .WithDatabase("gdac_core_test")
@@ -25,6 +29,13 @@ public class CoreWebAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+
+        builder.ConfigureAppConfiguration(cfg => cfg.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Jwt:PublicKey"] = _testRsa.ExportSubjectPublicKeyInfoPem(),
+            ["Jwt:Issuer"] = "test",
+            ["Jwt:Audience"] = "test"
+        }));
 
         builder.ConfigureServices(services =>
         {
