@@ -1,0 +1,24 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+
+namespace Gdac.Core.IntegrationTests.Infrastructure;
+
+public static class TestJwtFactory
+{
+    public static string ForUser(Guid userId)
+    {
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+            new Claim(ClaimTypes.NameIdentifier, userId.ToString())
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: "test",
+            audience: "test",
+            claims: claims,
+            expires: DateTime.UtcNow.AddHours(1));
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+}

@@ -1,0 +1,69 @@
+using Gdac.Core.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
+using Testcontainers.MySql;
+
+namespace Gdac.Core.IntegrationTests.Infrastructure;
+
+public class CoreWebAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
+{
+    private readonly MySqlContainer _db = new MySqlBuilder()
+        .WithImage("mariadb:11.4")
+        .WithDatabase("gdac_core_test")
+        .WithUsername("gdac")
+        .WithPassword("ci_password")
+        .Build();
+
+    private string ConnectionString =>
+        Environment.GetEnvironmentVariable("ConnectionStrings__Default")
+        ?? _db.GetConnectionString();
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.UseEnvironment("Testing");
+
+        builder.ConfigureServices(services =>
+        {
+            var descriptor = services.SingleOrDefault(
+                d => d.ServiceType == typeof(DbContextOptions<CoreDbContext>));
+            if (descriptor is not null) services.Remove(descriptor);
+
+            services.AddDbContext<CoreDbContext>(opts =>
+                opts.UseMySql(ConnectionString,
+                    new MariaDbServerVersion(new Version(11, 4, 0))));
+
+            services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, opts =>
+            {
+                opts.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = false,
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    SignatureValidator = (token, _) =>
+                        new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(token)
+                };
+            });
+        });
+    }
+
+    public async Task InitializeAsync()
+    {
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ConnectionStrings__Default")))
+            await _db.StartAsync();
+
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CoreDbContext>();
+        await db.Database.MigrateAsync();
+    }
+
+    public new async Task DisposeAsync()
+    {
+        await base.DisposeAsync();
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ConnectionStrings__Default")))
+            await _db.DisposeAsync();
+    }
+}
