@@ -6,7 +6,13 @@ services:
       - "127.0.0.1:8086:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__Default: "Server=mysql.gdac.com.br;Port=3306;Database=gdac05;Uid=gdac05;Pwd=${DB_PROD_PASSWORD};CharSet=utf8mb4;SslMode=Preferred;"
+      ConnectionStrings__Default: "Server=mysql.gdac.com.br;Port=3306;Database=gdac06;Uid=gdac06;Pwd=${DB_PROD_PASSWORD};CharSet=utf8mb4;SslMode=Preferred;"
       Jwt__Issuer: https://auth.gdac.com.br
       ServiceUrls__CoreApi: http://127.0.0.1:8082/
       ServiceUrls__AuthApi: http://127.0.0.1:8080/
+      Email__Host: smtp.kinghost.net
+      Email__Port: "465"
+      Email__Username: atendimento@gdac.com.br
+      Email__From: atendimento@gdac.com.br
+      Email__AlertTo: desenvolvimento@gdac.com.br
+      Email__SslMode: SslOnConnect
