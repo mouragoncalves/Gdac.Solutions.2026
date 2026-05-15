@@ -19,22 +19,6 @@ jobs:
       contents: read
       checks: write
 
-    services:
-      mariadb:
-        image: mariadb:11.4
-        env:
-          MARIADB_ROOT_PASSWORD: ci_root
-          MARIADB_DATABASE: gdac_content_test
-          MARIADB_USER: gdac
-          MARIADB_PASSWORD: ci_password
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,14 +33,6 @@ jobs:
 
       - name: Build
         run: dotnet build --no-restore -c Release
-
-      - name: Publish Test Results
-        uses: dorny/test-reporter@v1
-        if: always()
-        with:
-          name: Content Test Results
-          path: '**/TestResults/*.trx'
-          reporter: dotnet-trx
 
   docker-build:
     name: Docker Build
