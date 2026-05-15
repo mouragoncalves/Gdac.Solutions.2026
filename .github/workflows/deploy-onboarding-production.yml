@@ -1,0 +1,85 @@
+name: Deploy Onboarding Production
+
+on:
+  workflow_run:
+    workflows: [CI Onboarding]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Tag da imagem para deploy (SHA do commit)'
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    environment: production
+
+    steps:
+      - name: Resolve image tag
+        id: tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "value=${{ inputs.image_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          DB_PROD_PASSWORD: ${{ secrets.ONBOARDING_DB_PROD_PASSWORD }}
+          JWT_PUBLIC_KEY: ${{ secrets.AUTH_JWT_PUBLIC_KEY }}
+          EMAIL_PASSWORD: ${{ secrets.ONBOARDING_EMAIL_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          envs: DB_PROD_PASSWORD,JWT_PUBLIC_KEY,EMAIL_PASSWORD,GH_TOKEN,GH_REPO
+          script: |
+            set -e
+            REPO_DIR=/opt/gdac/onboarding
+
+            if [ ! -d "$REPO_DIR/.git" ]; then
+              echo "Primeira execução: clonando repositório..."
+              mkdir -p "$REPO_DIR"
+              git clone "https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git" "$REPO_DIR"
+            fi
+
+            cd "$REPO_DIR"
+            git pull origin main
+
+            cat > .env << 'EOF'
+            REGISTRY=ghcr.io
+            IMAGE_NAME=${{ github.repository_owner }}/gdac-onboarding
+            JWT_AUDIENCE=gdac-apps
+            EOF
+
+            echo "Atualizando imagem..."
+            docker pull ghcr.io/${{ github.repository_owner }}/gdac-onboarding:${{ steps.tag.outputs.value }}
+
+            echo "Subindo serviços..."
+            IMAGE_TAG=${{ steps.tag.outputs.value }} docker compose \
+              -p gdac-onboarding-prod \
+              --env-file .env \
+              -f docker/Onboarding/docker-compose.yml \
+              -f docker/Onboarding/docker-compose.prod.yml \
+              up -d --no-build --remove-orphans --force-recreate
+
+            echo "Aguardando health check..."
+            if ! timeout 90 bash -c 'until curl -sf http://localhost:8086/health/ready; do sleep 5; done'; then
+              echo "--- LOGS DO CONTAINER (últimas 50 linhas) ---"
+              docker logs --tail 50 gdac-onboarding-prod-onboarding-api-1 2>&1 || true
+              echo "--- HEALTH CHECK RESPONSE ---"
+              curl -s http://localhost:8086/health/ready 2>&1 || true
+              exit 1
+            fi
+            echo "Deploy produção Onboarding concluído."
