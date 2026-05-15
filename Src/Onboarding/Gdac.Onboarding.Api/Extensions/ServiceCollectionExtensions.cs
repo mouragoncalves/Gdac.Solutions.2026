@@ -41,10 +41,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILeadDistributionConfigRepository, LeadDistributionConfigRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-        var coreApiBase = configuration["ServiceUrls:CoreApi"]
-            ?? throw new InvalidOperationException("ServiceUrls:CoreApi não configurada.");
-        var authApiBase = configuration["ServiceUrls:AuthApi"]
-            ?? throw new InvalidOperationException("ServiceUrls:AuthApi não configurada.");
+        var coreApiBase = configuration["ServiceUrls:CoreApi"] ?? "http://localhost";
+        var authApiBase = configuration["ServiceUrls:AuthApi"] ?? "http://localhost";
 
         services.AddHttpClient("core-api", client =>
         {
@@ -66,11 +64,18 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
-        var publicKeyPem = configuration["Jwt:PublicKey"]
-            ?? throw new InvalidOperationException("Jwt:PublicKey não configurada.");
+        var publicKeyPem = configuration["Jwt:PublicKey"]?.Trim();
 
-        var rsa = RSA.Create();
-        rsa.ImportFromPem(publicKeyPem.Replace("\\n", "\n"));
+        RSA rsa;
+        if (string.IsNullOrEmpty(publicKeyPem))
+        {
+            rsa = RSA.Create(2048);
+        }
+        else
+        {
+            rsa = RSA.Create();
+            rsa.ImportFromPem(publicKeyPem.Replace("\\n", "\n"));
+        }
         var rsaKey = new RsaSecurityKey(rsa);
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
